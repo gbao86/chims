@@ -1,0 +1,4 @@
+BE:
+cd "d:\Hoc Tap\TTTN\chims\backend"
+uvicorn app.main:app --reload
+npm run dev

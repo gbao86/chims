@@ -1,0 +1,157 @@
+{
+  "summary": {
+    "total": 18,
+    "matched": 0,
+    "failed": 18,
+    "images_downloaded": 0,
+    "specs_found": 0,
+    "elapsed_seconds": 36.5,
+    "target_limit": 200
+  },
+  "results": [
+    {
+      "sku_code": "CASE-001",
+      "name": "NZXT H510 Flow",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "CPU-001",
+      "name": "AMD Ryzen 5 5600X",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "CPU-002",
+      "name": "Intel Core i7-13700K",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "CPU-003",
+      "name": "AMD Ryzen 9 7950X",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "FAN-001",
+      "name": "Noctua NH-D15",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "GPU-001",
+      "name": "NVIDIA RTX 4060 Ti",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "GPU-002",
+      "name": "AMD RX 7800 XT",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "GPU-003",
+      "name": "NVIDIA RTX 4090",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "HDD-001",
+      "name": "Seagate BarraCuda 2TB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "MB-001",
+      "name": "ASUS ROG STRIX B550-F Gaming",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "MB-002",
+      "name": "MSI MAG Z790 TOMAHAWK WiFi",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "PSU-001",
+      "name": "Corsair RM850x 850W",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "PSU-002",
+      "name": "Seasonic Focus GX-1000 1000W",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "RAM-001",
+      "name": "Kingston Fury Beast DDR4 16GB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "RAM-002",
+      "name": "Corsair Vengeance DDR5 32GB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "RAM-003",
+      "name": "G.Skill Trident Z5 RGB DDR5 32GB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "SSD-001",
+      "name": "Samsung 980 PRO 1TB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    },
+    {
+      "sku_code": "SSD-002",
+      "name": "WD Black SN850X 2TB",
+      "status": "no_match",
+      "images": 0,
+      "specs": 0,
+      "reason": "no match"
+    }
+  ]
+}
