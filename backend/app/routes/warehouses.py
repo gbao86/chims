@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -211,3 +214,4 @@ async def create_location(data: WarehouseLocationCreate, current_user: dict = De
     result = await db.warehouse_locations.insert_one(doc)
     doc["_id"] = result.inserted_id
     return serialize_location(doc)
+

@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -239,3 +242,4 @@ async def add_parts_to_ticket(
 
     updated = await db.tickets.find_one({"_id": oid})
     return serialize_ticket(updated)
+

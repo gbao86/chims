@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends
 from datetime import datetime, timezone, timedelta
 
@@ -77,3 +80,4 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "tickets_over_time": tickets_over_time,
         "category_distribution": category_distribution,
     }
+

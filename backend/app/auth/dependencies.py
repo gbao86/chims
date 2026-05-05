@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from bson import ObjectId
@@ -43,3 +46,4 @@ async def require_admin(current_user: dict = Depends(get_current_user)):
             detail="Admin access required",
         )
     return current_user
+

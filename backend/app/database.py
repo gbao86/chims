@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.config import get_settings
 import certifi
@@ -73,3 +76,4 @@ async def close_db():
 def get_db() -> AsyncIOMotorDatabase:
     """Get database instance for dependency injection."""
     return db_instance.db
+

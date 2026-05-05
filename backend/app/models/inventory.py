@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from enum import Enum
@@ -87,3 +90,4 @@ def compute_stock_status(quantity: int, min_stock: int = 5) -> StockStatus:
     elif quantity <= min_stock:
         return StockStatus.LOW_STOCK
     return StockStatus.IN_STOCK
+

@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -189,3 +192,4 @@ async def delete_build(build_id: str, current_user: dict = Depends(get_current_u
                     pass
     await db.pc_builds.delete_one({"_id": oid})
     return {"message": "Build deleted successfully"}
+

@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone, timedelta
@@ -185,3 +188,4 @@ async def export_report_pdf(current_user: dict = Depends(get_current_user)):
     doc.build(elements)
     buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": 'attachment; filename="reports-summary.pdf"'})
+

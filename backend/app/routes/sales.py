@@ -1,3 +1,6 @@
+﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# This file is part of the chims project.
+# Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -263,3 +266,4 @@ async def delete_sales_order(
         raise HTTPException(status_code=400, detail="Only draft orders can be deleted")
     await db.sales_orders.delete_one({"_id": oid})
     return {"message": "Order deleted"}
+
