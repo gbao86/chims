@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -188,7 +188,7 @@ export default function BuildPCPage() {
 
       {/* Builder Drawer */}
       <Drawer open={builderOpen} onClose={() => { setBuilderOpen(false); setCompatResult(null); }}
-        title="🖥️ Xây dựng cấu hình PC" width={720} destroyOnClose
+        title="🖥️ Xây dựng cấu hình PC" size="large" destroyOnHidden
         extra={<Button type="primary" onClick={handleCreateBuild} style={{ borderRadius: 10, fontWeight: 600, background: 'linear-gradient(135deg, #22c55e, #10b981)', border: 'none' }}>Lưu cấu hình</Button>}>
 
         <Form layout="vertical">

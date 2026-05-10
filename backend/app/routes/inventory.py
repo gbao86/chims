@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,30 +23,30 @@ def serialize_inventory(item: dict) -> dict:
     """Convert MongoDB document to response format."""
     return {
         "id": str(item["_id"]),
-        "sku_code": item["sku_code"],
-        "name": item["name"],
-        "category": item["category"],
+        "sku_code": item.get("sku_code", ""),
+        "name": item.get("name", ""),
+        "category": item.get("category", "Other"),
         "brand": item.get("brand", ""),
         "image_url": item.get("image_url", ""),
         "image_urls": item.get("image_urls", ([item.get("image_url", "")] if item.get("image_url") else [])),
         "specs": item.get("specs", {}),
-        "stock_quantity": item["stock_quantity"],
+        "stock_quantity": item.get("stock_quantity", 0),
         "min_stock": item.get("min_stock", 5),
         "cost_price": item.get("cost_price", 0),
-        "unit_price": item["unit_price"],
+        "unit_price": item.get("unit_price", 0),
         "warranty_months": item.get("warranty_months", 24),
         "location": item.get("location", ""),
         "barcode": item.get("barcode", ""),
-        "status": item["status"],
-        "created_at": item["created_at"],
-        "updated_at": item["updated_at"],
+        "status": item.get("status", "in_stock"),
+        "created_at": item.get("created_at") or item.get("updated_at"),
+        "updated_at": item.get("updated_at") or item.get("created_at"),
     }
 
 
 @router.get("")
 async def list_inventory(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=200),
     category: Optional[Category] = None,
     search: Optional[str] = None,
     status: Optional[str] = None,
@@ -116,6 +116,76 @@ async def create_inventory(
     return serialize_inventory(doc)
 
 
+@router.get("/overstock-alerts")
+async def get_overstock_alerts(current_user: dict = Depends(get_current_user)):
+    """List inventory items that might be overstocked (in stock for > 90 days)."""
+    db = get_db()
+    from datetime import timedelta
+    ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+    
+    pipeline = [
+        {"$match": {"status": "available", "created_at": {"$lte": ninety_days_ago}}},
+        {"$group": {"_id": "$inventory_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20}
+    ]
+    cursor = db.serial_units.aggregate(pipeline)
+    alerts = []
+    async for doc in cursor:
+        inv_id = doc["_id"]
+        count = doc["count"]
+        try:
+            inv = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+            if inv:
+                alerts.append({
+                    "inventory_id": str(inv["_id"]),
+                    "sku_code": inv["sku_code"],
+                    "name": inv["name"],
+                    "category": inv["category"],
+                    "overstock_quantity": count,
+                    "days_in_stock": 90,
+                })
+        except Exception:
+            pass
+            
+    return {"alerts": alerts}
+
+
+@router.get("/liquidation-candidates")
+async def get_liquidation_candidates(current_user: dict = Depends(get_current_user)):
+    """List items that are candidates for liquidation."""
+    db = get_db()
+    from datetime import timedelta
+    half_year_ago = datetime.now(timezone.utc) - timedelta(days=180)
+    
+    pipeline = [
+        {"$match": {"status": "available", "created_at": {"$lte": half_year_ago}}},
+        {"$group": {"_id": "$inventory_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    cursor = db.serial_units.aggregate(pipeline)
+    candidates = []
+    async for doc in cursor:
+        inv_id = doc["_id"]
+        count = doc["count"]
+        try:
+            inv = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+            if inv:
+                candidates.append({
+                    "inventory_id": str(inv["_id"]),
+                    "sku_code": inv["sku_code"],
+                    "name": inv["name"],
+                    "category": inv["category"],
+                    "stock_quantity": count,
+                    "suggested_discount": 20.0,
+                })
+        except Exception:
+            pass
+            
+    return {"candidates": candidates}
+
+
 @router.put("/{item_id}")
 async def update_inventory(
     item_id: str,
@@ -178,4 +248,5 @@ async def delete_inventory(
         )
 
     return {"message": "Item deleted successfully"}
+
 

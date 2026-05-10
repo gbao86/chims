@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from contextlib import asynccontextmanager
@@ -22,6 +22,7 @@ from app.routes.serial_units import router as serial_units_router
 from app.routes.builds import router as builds_router
 from app.routes.warehouses import router as warehouses_router
 from app.routes.rma import router as rma_router
+from app.routes.audit import router as audit_router
 
 
 @asynccontextmanager
@@ -43,7 +44,11 @@ app = FastAPI(
 # Wildcard origins cannot be safely combined with credentialed requests.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.1.83:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,6 +71,7 @@ app.include_router(serial_units_router, prefix="/api/serial-units", tags=["Seria
 app.include_router(builds_router, prefix="/api/builds", tags=["PC Builds"])
 app.include_router(warehouses_router, prefix="/api/warehouses", tags=["Warehouses"])
 app.include_router(rma_router, prefix="/api/rma", tags=["RMA"])
+app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])
 
 
 @app.get("/", tags=["Root"])

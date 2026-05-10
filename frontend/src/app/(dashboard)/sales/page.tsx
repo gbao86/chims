@@ -108,7 +108,7 @@ export default function SalesPage() {
         ]}
       />
 
-      <Drawer open={createOpen} onClose={() => { setCreateOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa đơn bán' : 'Tạo đơn bán'} size="large" extra={<Button type="primary" onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnClose>
+      <Drawer open={createOpen} onClose={() => { setCreateOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa đơn bán' : 'Tạo đơn bán'} size="large" extra={<Button type="primary" onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ payment_method: 'cash', items: [{ inventory_id: undefined, name: '', quantity: 1, unit_price: 0, discount: 0 }] }}>
           <Form.Item name="customer_id" label="Khách hàng">
             <Select allowClear options={customers} placeholder="Chọn khách hàng" />

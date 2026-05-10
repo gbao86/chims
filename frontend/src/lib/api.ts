@@ -1,9 +1,9 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -26,14 +26,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Debounce flag — prevents multiple concurrent 401s from all triggering redirect
+let isRedirectingToLogin = false;
+
 // Response interceptor: handle 401 → redirect to login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('chims_token');
-      localStorage.removeItem('chims_user');
-      window.location.href = '/login';
+      if (!isRedirectingToLogin) {
+        isRedirectingToLogin = true;
+        localStorage.removeItem('chims_token');
+        localStorage.removeItem('chims_user');
+        // Small delay so all in-flight requests can settle before redirect
+        setTimeout(() => {
+          window.location.href = '/login';
+          isRedirectingToLogin = false;
+        }, 100);
+      }
     }
     return Promise.reject(error);
   }

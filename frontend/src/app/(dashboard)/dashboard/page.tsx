@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         type="warning"
         showIcon
         style={{ marginBottom: 24 }}
-        message={`Cần rà soát ${stats?.low_stock_count || 0} SKU sắp hết hàng và đồng bộ ảnh/specs cho catalog.`}
+        title={`Cần rà soát ${stats?.low_stock_count || 0} SKU sắp hết hàng và đồng bộ ảnh/specs cho catalog.`}
       />
 
       <Row gutter={[20, 20]} style={{ marginBottom: 24 }}>

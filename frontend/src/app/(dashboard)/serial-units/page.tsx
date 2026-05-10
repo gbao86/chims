@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -47,7 +47,7 @@ export default function SerialUnitsPage() {
       if (statusFilter) params.status = statusFilter;
       const [serialRes, invRes] = await Promise.all([
         api.get('/api/serial-units', { params }),
-        api.get<InventoryListResponse>('/api/inventory', { params: { limit: 200 } }),
+        api.get<InventoryListResponse>('/api/inventory', { params: { limit: 100 } }),
       ]);
       setItems(serialRes.data.items || []);
       setTotal(serialRes.data.total || 0);
@@ -56,6 +56,14 @@ export default function SerialUnitsPage() {
   }, [page, search, condFilter, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (editUnit) {
+      editForm.setFieldsValue(editUnit);
+    } else {
+      editForm.resetFields();
+    }
+  }, [editUnit, editForm]);
 
   const handleAdd = async () => {
     const values = await form.validateFields();
@@ -107,7 +115,7 @@ export default function SerialUnitsPage() {
         <Space>
           <Button icon={<BarcodeOutlined />} onClick={() => { setScanOpen(true); setScanResult(null); setScanCode(''); }}>Quét mã</Button>
           <Button icon={<ImportOutlined />} onClick={() => setBulkOpen(true)}>Nhập hàng loạt</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setAddOpen(true); }}
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}
             style={{ borderRadius: 12, fontWeight: 600, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none' }}>Thêm Serial</Button>
         </Space>
       </div>
@@ -137,14 +145,14 @@ export default function SerialUnitsPage() {
             { title: 'Trạng thái', dataIndex: 'status', width: 120, render: (v: SerialStatus) => <Tag color={statusColors[v]}>{statusLabels[v]}</Tag> },
             { title: 'Kho', dataIndex: 'warehouse_name', width: 140, render: (v: string) => v || <Text type="secondary">—</Text> },
             { title: 'Vị trí', dataIndex: 'location_code', width: 100, render: (v: string) => v ? <Tag>{v}</Tag> : '—' },
-            { title: '', width: 60, render: (_: unknown, r: SerialUnit) => <Button size="small" icon={<EditOutlined />} onClick={() => { setEditUnit(r); editForm.setFieldsValue(r); }} /> },
+            { title: '', width: 60, render: (_: unknown, r: SerialUnit) => <Button size="small" icon={<EditOutlined />} onClick={() => setEditUnit(r)} /> },
           ]}
         />
       </div>
 
       {/* Add Single Modal */}
       <Modal open={addOpen} onCancel={() => setAddOpen(false)} onOk={handleAdd}
-        title="Thêm Serial Unit" okText="Thêm" cancelText="Hủy" destroyOnClose>
+        title="Thêm Serial Unit" okText="Thêm" cancelText="Hủy" destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ condition: 'new' }}>
           <Form.Item name="serial_number" label="Serial Number" rules={[{ required: true }]}><Input placeholder="Nhập hoặc quét serial" /></Form.Item>
           <Form.Item name="inventory_id" label="Sản phẩm (SPU)" rules={[{ required: true }]}>
@@ -167,7 +175,7 @@ export default function SerialUnitsPage() {
 
       {/* Bulk Import Modal */}
       <Modal open={bulkOpen} onCancel={() => setBulkOpen(false)} onOk={handleBulkAdd}
-        title="📦 Nhập Serial hàng loạt" okText="Nhập" cancelText="Hủy" destroyOnClose>
+        title="📦 Nhập Serial hàng loạt" okText="Nhập" cancelText="Hủy" destroyOnHidden>
         <Form form={bulkForm} layout="vertical" initialValues={{ condition: 'new' }}>
           <Form.Item name="inventory_id" label="Sản phẩm (SPU)" rules={[{ required: true }]}>
             <Select showSearch optionFilterProp="label"
@@ -184,7 +192,7 @@ export default function SerialUnitsPage() {
       </Modal>
 
       {/* Scan Modal */}
-      <Modal open={scanOpen} onCancel={() => setScanOpen(false)} title="🔍 Quét mã Serial / Barcode" footer={null} destroyOnClose>
+      <Modal open={scanOpen} onCancel={() => setScanOpen(false)} title="🔍 Quét mã Serial / Barcode" footer={null} destroyOnHidden>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <Input placeholder="Quét hoặc nhập mã..." value={scanCode} onChange={e => setScanCode(e.target.value)}
             onPressEnter={handleScan} autoFocus style={{ borderRadius: 10 }} />

@@ -89,7 +89,7 @@ export default function PurchasePage() {
         ]}
       />
 
-      <Drawer open={open} onClose={() => { setOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa phiếu nhập' : 'Tạo phiếu nhập'} size="large" extra={<Button type="primary" onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnClose>
+      <Drawer open={open} onClose={() => { setOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa phiếu nhập' : 'Tạo phiếu nhập'} size="large" extra={<Button type="primary" onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ items: [{ inventory_id: undefined, quantity: 1, unit_cost: 0 }] }}>
           <Form.Item name="supplier_id" label="Nhà cung cấp" rules={[{ required: true }]}><Select options={suppliers} placeholder="Chọn NCC" /></Form.Item>
           <Form.List name="items">

@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -57,9 +57,16 @@ export default function WarehousePage() {
         await api.post('/api/warehouses', values);
         message.success('Tạo kho thành công');
       }
-      setModalOpen(false); setEditWH(null); form.resetFields(); fetchData();
+      setModalOpen(false); setEditWH(null); fetchData();
     } catch { message.error('Lỗi lưu kho'); }
   };
+
+  useEffect(() => {
+    if (modalOpen) {
+      if (editWH) form.setFieldsValue(editWH);
+      else form.resetFields();
+    }
+  }, [modalOpen, editWH, form]);
 
   const handleDelete = async (id: string) => {
     try { await api.delete(`/api/warehouses/${id}`); message.success('Đã xóa'); fetchData(); }
@@ -100,7 +107,7 @@ export default function WarehousePage() {
         </div>
         <Space>
           <Button icon={<SwapOutlined />} onClick={() => setTransferOpen(true)}>Chuyển kho</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditWH(null); form.resetFields(); setModalOpen(true); }}
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditWH(null); setModalOpen(true); }}
             style={{ borderRadius: 12, fontWeight: 600, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none' }}>Thêm kho</Button>
         </Space>
       </div>
@@ -109,17 +116,17 @@ export default function WarehousePage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 16, background: isDark ? 'rgba(99,102,241,0.08)' : 'linear-gradient(135deg, #f0f0ff, #e8e8ff)', border: '1px solid rgba(99,102,241,0.15)' }}>
-            <Statistic title="Tổng số kho" value={warehouses.length} suffix="kho" valueStyle={{ color: '#6366f1', fontWeight: 800 }} />
+            <Statistic title="Tổng số kho" value={warehouses.length} suffix="kho" styles={{ content: { color: '#6366f1', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 16, background: isDark ? 'rgba(34,197,94,0.08)' : 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: '1px solid rgba(34,197,94,0.15)' }}>
-            <Statistic title="Tổng sản phẩm" value={totalItems} suffix="units" valueStyle={{ color: '#22c55e', fontWeight: 800 }} />
+            <Statistic title="Tổng sản phẩm" value={totalItems} suffix="units" styles={{ content: { color: '#22c55e', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card style={{ borderRadius: 16, background: isDark ? 'rgba(245,158,11,0.08)' : 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid rgba(245,158,11,0.15)' }}>
-            <Statistic title="Chi nhánh hoạt động" value={branches.length} suffix="nhánh" valueStyle={{ color: '#f59e0b', fontWeight: 800 }} />
+            <Statistic title="Chi nhánh hoạt động" value={branches.length} suffix="nhánh" styles={{ content: { color: '#f59e0b', fontWeight: 800 } }} />
           </Card>
         </Col>
       </Row>
@@ -151,7 +158,7 @@ export default function WarehousePage() {
             { title: 'Hành động', width: 150, align: 'center', render: (_: unknown, r: Warehouse) => (
               <Space>
                 <Button size="small" icon={<EnvironmentOutlined />} onClick={() => openDetail(r)}>Chi tiết</Button>
-                <Button size="small" icon={<EditOutlined />} onClick={() => { setEditWH(r); form.setFieldsValue(r); setModalOpen(true); }} />
+                <Button size="small" icon={<EditOutlined />} onClick={() => { setEditWH(r); setModalOpen(true); }} />
                 <Popconfirm title="Xóa kho?" onConfirm={() => handleDelete(r.id)} okText="Xóa" cancelText="Hủy">
                   <Button size="small" danger icon={<DeleteOutlined />} />
                 </Popconfirm>
@@ -163,7 +170,7 @@ export default function WarehousePage() {
 
       {/* Create/Edit Modal */}
       <Modal open={modalOpen} onCancel={() => { setModalOpen(false); setEditWH(null); }} onOk={handleSave}
-        title={editWH ? 'Sửa kho' : 'Thêm kho mới'} okText="Lưu" cancelText="Hủy" destroyOnClose>
+        title={editWH ? 'Sửa kho' : 'Thêm kho mới'} okText="Lưu" cancelText="Hủy" destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ type: 'main' }}>
           <Form.Item name="name" label="Tên kho" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="address" label="Địa chỉ"><Input /></Form.Item>
@@ -175,7 +182,7 @@ export default function WarehousePage() {
       </Modal>
 
       {/* Detail Drawer */}
-      <Drawer open={!!detailWH} onClose={() => setDetailWH(null)} title={`📦 ${detailWH?.name || ''}`} width={600}>
+      <Drawer open={!!detailWH} onClose={() => setDetailWH(null)} title={`📦 ${detailWH?.name || ''}`} size="large">
         {detailWH && (
           <>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 20 }}>
@@ -218,7 +225,7 @@ export default function WarehousePage() {
 
       {/* Transfer Modal */}
       <Modal open={transferOpen} onCancel={() => setTransferOpen(false)} onOk={handleTransfer}
-        title="↔️ Chuyển kho" okText="Chuyển" cancelText="Hủy" destroyOnClose>
+        title="↔️ Chuyển kho" okText="Chuyển" cancelText="Hủy" destroyOnHidden>
         <Form form={transferForm} layout="vertical">
           <Form.Item name="serial_unit_ids" label="Serial IDs (cách nhau bởi dấu phẩy)" rules={[{ required: true }]}>
             <Input.TextArea rows={3} placeholder="SN001, SN002, SN003" />

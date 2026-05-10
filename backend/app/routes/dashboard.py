@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends
@@ -66,6 +66,21 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     async for doc in category_cursor:
         category_distribution.append({"category": doc["_id"], "count": doc["count"]})
 
+    top_selling_pipeline = [
+        {"$unwind": "$items"},
+        {"$group": {"_id": "$items.sku_code", "total_quantity": {"$sum": "$items.quantity"}, "name": {"$first": "$items.product_name"}}},
+        {"$sort": {"total_quantity": -1}},
+        {"$limit": 10}
+    ]
+    top_selling_cursor = db.sales_orders.aggregate(top_selling_pipeline)
+    top_selling = []
+    async for doc in top_selling_cursor:
+        top_selling.append({
+            "sku_code": doc["_id"],
+            "name": doc["name"],
+            "quantity": doc["total_quantity"]
+        })
+
     return {
         "total_parts": total_parts,
         "low_stock_count": low_stock_count,
@@ -79,5 +94,6 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "total_revenue": total_revenue,
         "tickets_over_time": tickets_over_time,
         "category_distribution": category_distribution,
+        "top_selling": top_selling,
     }
 

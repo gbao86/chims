@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -150,7 +150,7 @@ export default function RMAPage() {
 
       {/* Create RMA Modal */}
       <Modal open={createOpen} onCancel={() => setCreateOpen(false)} onOk={handleCreate}
-        title="📋 Tạo phiếu RMA" okText="Tạo" cancelText="Hủy" destroyOnClose width={600}>
+        title="📋 Tạo phiếu RMA" okText="Tạo" cancelText="Hủy" destroyOnHidden width={600}>
         <Form form={form} layout="vertical">
           <Form.Item name="serial_number" label="Serial Number" rules={[{ required: true, message: 'Nhập serial' }]}><Input placeholder="Nhập serial sản phẩm" /></Form.Item>
           <Row gutter={12}>
@@ -165,8 +165,8 @@ export default function RMAPage() {
       </Modal>
 
       {/* Detail Drawer */}
-      <Drawer open={!!detailRMA} onClose={() => setDetailRMA(null)} title={`🔧 ${detailRMA?.rma_code || ''}`} width={600}
-        extra={<Button type="primary" onClick={() => { setUpdateOpen(true); updateForm.resetFields(); }}>Cập nhật trạng thái</Button>}>
+      <Drawer open={!!detailRMA} onClose={() => setDetailRMA(null)} title={`🔧 ${detailRMA?.rma_code || ''}`} size="large"
+        extra={<Button type="primary" onClick={() => setUpdateOpen(true)}>Cập nhật trạng thái</Button>}>
         {detailRMA && (
           <>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 20 }}>
@@ -221,7 +221,7 @@ export default function RMAPage() {
 
       {/* Update Status Modal */}
       <Modal open={updateOpen} onCancel={() => setUpdateOpen(false)} onOk={handleUpdateStatus}
-        title="Cập nhật trạng thái RMA" okText="Cập nhật" cancelText="Hủy" destroyOnClose>
+        title="Cập nhật trạng thái RMA" okText="Cập nhật" cancelText="Hủy" destroyOnHidden>
         <Form form={updateForm} layout="vertical">
           <Form.Item name="status" label="Trạng thái mới" rules={[{ required: true }]}>
             <Select options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))} />

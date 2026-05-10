@@ -1,4 +1,7 @@
 BE:
 cd "d:\Hoc Tap\TTTN\chims\backend"
 uvicorn app.main:app --reload
+
+FE:
+cd "d:\Hoc Tap\TTTN\chims\frontend"
 npm run dev
