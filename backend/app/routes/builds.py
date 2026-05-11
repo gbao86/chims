@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,6 +10,7 @@ from app.database import get_db
 from app.auth.dependencies import get_current_user
 from app.models.pc_build import PCBuildCreate, PCBuildUpdate, CompatibilityCheckRequest, BuildStatus
 from app.services.compatibility import check_compatibility
+from app.services.ai_service import analyze_build_with_ai
 from app.models.serial_unit import SerialStatus
 
 router = APIRouter()
@@ -123,6 +124,27 @@ async def check_build_compatibility(data: CompatibilityCheckRequest, current_use
     enriched = await _enrich_components(db, [c.model_dump() for c in data.components])
     level, notes, total_tdp, recommended_psu, total_price = check_compatibility(enriched)
     return {"level": level, "notes": notes, "total_tdp": total_tdp, "recommended_psu": recommended_psu, "total_price": total_price}
+
+
+@router.post("/ai-analyze")
+async def ai_analyze_build(data: CompatibilityCheckRequest, current_user: dict = Depends(get_current_user)):
+    """AI-powered PC build analysis using Gemini 2.0 Flash."""
+    db = get_db()
+    enriched = await _enrich_components(db, [c.model_dump() for c in data.components])
+    # Run rule-based check first
+    level, notes, total_tdp, recommended_psu, total_price = check_compatibility(enriched)
+    # Run AI analysis
+    ai_result = await analyze_build_with_ai(enriched, notes, total_tdp, recommended_psu, total_price)
+    return {
+        "rule_based": {
+            "level": level,
+            "notes": notes,
+            "total_tdp": total_tdp,
+            "recommended_psu": recommended_psu,
+            "total_price": total_price,
+        },
+        "ai": ai_result,
+    }
 
 
 @router.post("/{build_id}/assemble")

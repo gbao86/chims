@@ -5,7 +5,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Typography, Button, Select, Card, Tag, Space, InputNumber, Input, App, Table, Popconfirm, Badge, Drawer, Form, Tooltip, Progress } from 'antd';
-import { PlusOutlined, ThunderboltOutlined, DeleteOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined, SearchOutlined, ReloadOutlined, BuildOutlined, DesktopOutlined } from '@ant-design/icons';
+import { PlusOutlined, ThunderboltOutlined, DeleteOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined, SearchOutlined, ReloadOutlined, BuildOutlined, DesktopOutlined, RobotOutlined, BulbOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import { InventoryItem, InventoryListResponse, PCBuild, PCBuildComponent, CompatibilityLevel, Category } from '@/types';
 import { useTheme } from '@/components/ThemeProvider';
@@ -53,6 +53,13 @@ export default function BuildPCPage() {
   const [selectedComponents, setSelectedComponents] = useState<Record<string, { inventory_id: string; quantity: number }>>({});
   const [compatResult, setCompatResult] = useState<{ level: CompatibilityLevel; notes: string[]; total_tdp: number; recommended_psu: number; total_price: number } | null>(null);
   const [checking, setChecking] = useState(false);
+  const [aiResult, setAiResult] = useState<{
+    available: boolean; message?: string; overall?: string; summary?: string;
+    issues?: string[]; missing?: string[];
+    suggestions?: { title: string; detail: string }[];
+    verdict?: string;
+  } | null>(null);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -82,10 +89,28 @@ export default function BuildPCPage() {
     }
     if (comps.length < 2) { message.warning('Chọn ít nhất 2 linh kiện để kiểm tra'); return; }
     setChecking(true);
+    setAiResult(null);
     try {
       const res = await api.post('/api/builds/check-compatibility', { components: comps });
       setCompatResult(res.data);
     } catch { message.error('Lỗi kiểm tra tương thích'); } finally { setChecking(false); }
+  };
+
+  const handleAIAnalyze = async () => {
+    const comps: PCBuildComponent[] = [];
+    for (const [cat, sel] of Object.entries(selectedComponents)) {
+      if (sel.inventory_id) {
+        const inv = inventory.find(i => i.id === sel.inventory_id);
+        comps.push({ category: cat, inventory_id: sel.inventory_id, quantity: sel.quantity, unit_price: inv?.unit_price || 0 });
+      }
+    }
+    if (comps.length < 2) { message.warning('Chọn ít nhất 2 linh kiện để phân tích AI'); return; }
+    setAiAnalyzing(true);
+    try {
+      const res = await api.post('/api/builds/ai-analyze', { components: comps });
+      setCompatResult(res.data.rule_based);
+      setAiResult(res.data.ai);
+    } catch { message.error('Lỗi phân tích AI'); } finally { setAiAnalyzing(false); }
   };
 
   const handleCreateBuild = async () => {
@@ -235,10 +260,16 @@ export default function BuildPCPage() {
         <Card style={{ borderRadius: 16, background: isDark ? 'rgba(99,102,241,0.08)' : 'linear-gradient(135deg, #f0f0ff, #e8e8ff)', border: '1px solid rgba(99,102,241,0.2)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text strong style={{ fontSize: 16 }}>Tổng cấu hình</Text>
-            <Button icon={<ThunderboltOutlined />} onClick={checkCompat} loading={checking}
-              style={{ borderRadius: 10, fontWeight: 600, background: '#f59e0b', color: '#fff', border: 'none' }}>
-              Kiểm tra tương thích
-            </Button>
+            <Space>
+              <Button icon={<ThunderboltOutlined />} onClick={checkCompat} loading={checking}
+                style={{ borderRadius: 10, fontWeight: 600, background: '#f59e0b', color: '#fff', border: 'none' }}>
+                Kiểm tra tương thích
+              </Button>
+              <Button icon={<RobotOutlined />} onClick={handleAIAnalyze} loading={aiAnalyzing}
+                style={{ borderRadius: 10, fontWeight: 600, background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', border: 'none' }}>
+                ✨ Phân tích AI
+              </Button>
+            </Space>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div><Text type="secondary">Linh kiện</Text><div style={{ fontSize: 20, fontWeight: 800 }}>{selectedCount}/{COMPONENT_SLOTS.length}</div></div>
@@ -259,6 +290,70 @@ export default function BuildPCPage() {
                 <Text><strong>PSU khuyến nghị:</strong> <Tag color="orange">{compatResult.recommended_psu}W</Tag></Text>
               </div>
               {compatResult.notes.map((n, i) => <div key={i} style={{ padding: '4px 0', fontSize: 13 }}>{n}</div>)}
+            </div>
+          )}
+
+          {/* AI Analysis Result */}
+          {aiResult && (
+            <div style={{ marginTop: 16, padding: '16px', borderRadius: 12, background: isDark ? 'rgba(79,70,229,0.1)' : 'linear-gradient(135deg, #ede9fe, #f5f3ff)', border: '1px solid rgba(99,102,241,0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <RobotOutlined style={{ color: '#6366f1', fontSize: 18 }} />
+                <Text strong style={{ color: '#6366f1', fontSize: 15 }}>Phân tích bởi AI</Text>
+                {aiResult.overall && (
+                  <Tag color={aiResult.overall === 'compatible' ? 'success' : aiResult.overall === 'warning' ? 'warning' : 'error'} style={{ marginLeft: 'auto' }}>
+                    {aiResult.overall === 'compatible' ? '✅ Tương thích' : aiResult.overall === 'warning' ? '⚠️ Cảnh báo' : '❌ Có vấn đề'}
+                  </Tag>
+                )}
+              </div>
+
+              {!aiResult.available && aiResult.message && (
+                <div style={{ color: '#94a3b8', fontSize: 13, fontStyle: 'italic' }}>
+                  ⚠️ {aiResult.message}
+                </div>
+              )}
+
+              {aiResult.available && (
+                <>
+                  {aiResult.summary && (
+                    <div style={{ marginBottom: 10, fontSize: 14, lineHeight: 1.6 }}>{aiResult.summary}</div>
+                  )}
+
+                  {aiResult.issues && aiResult.issues.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <Text strong style={{ color: '#ef4444', fontSize: 13 }}><ExclamationCircleOutlined /> Vấn đề phát hiện:</Text>
+                      {aiResult.issues.map((issue, i) => (
+                        <div key={i} style={{ padding: '3px 0 3px 16px', fontSize: 13, color: '#dc2626' }}>• {issue}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {aiResult.missing && aiResult.missing.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <Text strong style={{ color: '#f59e0b', fontSize: 13 }}>⚠️ Còn thiếu:</Text>
+                      {aiResult.missing.map((m, i) => (
+                        <div key={i} style={{ padding: '3px 0 3px 16px', fontSize: 13 }}>• {m}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {aiResult.suggestions && aiResult.suggestions.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <Text strong style={{ color: '#6366f1', fontSize: 13 }}><BulbOutlined /> Đề xuất nâng cấp:</Text>
+                      {aiResult.suggestions.map((s, i) => (
+                        <div key={i} style={{ padding: '4px 0 4px 16px', fontSize: 13 }}>
+                          <span style={{ fontWeight: 600 }}>• {s.title}:</span> {s.detail}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {aiResult.verdict && (
+                    <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: isDark ? 'rgba(99,102,241,0.15)' : '#ede9fe', fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>
+                      🏁 {aiResult.verdict}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </Card>

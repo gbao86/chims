@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 """
@@ -14,16 +14,19 @@ Checks hardware compatibility between components:
 
 from typing import List, Dict, Any, Tuple
 
-# Socket → Brand mapping
+# Socket → Brand mapping (keys must be in normalize_socket() form: uppercase, no space, no FC prefix)
 SOCKET_BRAND_MAP = {
     "LGA1700": "Intel",
     "LGA1851": "Intel",
     "LGA1200": "Intel",
     "LGA1151": "Intel",
+    "LGA1150": "Intel",
+    "LGA2011": "Intel",
     "AM5": "AMD",
     "AM4": "AMD",
-    "sTR5": "AMD",
-    "sTRX4": "AMD",
+    "STR5": "AMD",
+    "STRX4": "AMD",
+    "TR4": "AMD",
 }
 
 # Form factor compatibility (case supports mainboard)
@@ -51,6 +54,19 @@ DEFAULT_TDP = {
 }
 
 
+def normalize_socket(socket: str) -> str:
+    """Normalize socket name to canonical form for comparison.
+
+    Handles variants like: FCLGA1700, LGA 1700, LGA1700, lga1700 → LGA1700
+    Also handles AMD: AM4, AM5, sTR5, sTRX4
+    """
+    s = str(socket).strip().upper().replace(" ", "").replace("-", "")
+    # Strip Intel FC prefix: FCLGA → LGA
+    if s.startswith("FC"):
+        s = s[2:]
+    return s
+
+
 def get_spec_value(specs: Dict[str, Any], keys: List[str], default: Any = "") -> Any:
     """Get a spec value, trying multiple key variations."""
     for key in keys:
@@ -62,6 +78,7 @@ def get_spec_value(specs: Dict[str, Any], keys: List[str], default: Any = "") ->
             if k.lower() == key.lower() and v is not None and v != "":
                 return v
     return default
+
 
 
 def extract_tdp(specs: Dict[str, Any], category: str) -> int:
@@ -133,23 +150,25 @@ def check_compatibility(
     if cpus and mainboards:
         for cpu in cpus:
             cpu_specs = cpu.get("specs", {})
-            cpu_socket = get_spec_value(cpu_specs, ["Socket", "socket"])
+            cpu_socket_raw = get_spec_value(cpu_specs, ["Socket", "socket"])
             cpu_brand = get_spec_value(cpu_specs, ["Brand", "brand"])
+            cpu_socket = normalize_socket(cpu_socket_raw) if cpu_socket_raw else ""
 
             for mb in mainboards:
                 mb_specs = mb.get("specs", {})
-                mb_socket = get_spec_value(mb_specs, ["Socket", "socket"])
+                mb_socket_raw = get_spec_value(mb_specs, ["Socket", "socket"])
+                mb_socket = normalize_socket(mb_socket_raw) if mb_socket_raw else ""
 
                 if cpu_socket and mb_socket and cpu_socket != mb_socket:
                     notes.append(
-                        f"❌ Socket không khớp: CPU ({cpu_socket}) ≠ Mainboard ({mb_socket})"
+                        f"❌ Socket không khớp: CPU ({cpu_socket_raw}) ≠ Mainboard ({mb_socket_raw})"
                     )
                     level = "error"
                 elif cpu_brand and mb_socket:
                     expected_brand = SOCKET_BRAND_MAP.get(mb_socket, "")
                     if expected_brand and cpu_brand.lower() != expected_brand.lower():
                         notes.append(
-                            f"❌ CPU {cpu_brand} không tương thích với Mainboard socket {mb_socket} ({expected_brand})"
+                            f"❌ CPU {cpu_brand} không tương thích với Mainboard socket {mb_socket_raw} ({expected_brand})"
                         )
                         level = "error"
 

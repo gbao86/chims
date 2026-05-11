@@ -1,16 +1,20 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Typography, Avatar, Tag, Switch, Form, Input, Button, App } from 'antd';
+import { Typography, Avatar, Tag, Switch, Form, Input, Button, App, Space } from 'antd';
 import {
   UserOutlined,
   LockOutlined,
   BgColorsOutlined,
   SafetyOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
+import api from '@/lib/api';
 import { User } from '@/types';
 import { useTheme } from '@/components/ThemeProvider';
 import { APP_VERSION, APP_DESCRIPTION, APP_NAME } from '@/lib/appInfo';
@@ -35,10 +39,38 @@ export default function SettingsPage() {
   const { message } = App.useApp();
   const currentYear = new Date().getFullYear();
 
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [updating, setUpdating] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem('chims_user');
     if (saved) setUser(JSON.parse(saved));
   }, []);
+
+  const handleUpdateProfile = async () => {
+    if (!newName.trim()) {
+      message.warning('Tên không được để trống');
+      return;
+    }
+    if (newName === user?.full_name) {
+      setEditingName(false);
+      return;
+    }
+    setUpdating(true);
+    try {
+      const res = await api.put<User>('/api/auth/profile', { full_name: newName });
+      setUser(res.data);
+      localStorage.setItem('chims_user', JSON.stringify(res.data));
+      message.success('Cập nhật tên thành công!');
+      window.dispatchEvent(new Event('chims_user_updated'));
+      setEditingName(false);
+    } catch {
+      message.error('Lỗi khi cập nhật tên!');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const handlePasswordChange = () => {
     message.info('Tính năng đổi mật khẩu sẽ được cập nhật trong phiên bản tới.');
@@ -76,11 +108,29 @@ export default function SettingsPage() {
               boxShadow: '0 8px 24px rgba(99,102,241,0.3)',
             }}
           />
-          <div>
-            <Title level={4} style={{ margin: 0, color: isDark ? '#f1f5f9' : '#0f172a' }}>
-              {user?.full_name || 'User'}
-            </Title>
-            <Text type="secondary">@{user?.username}</Text>
+          <div style={{ flex: 1 }}>
+            {editingName ? (
+              <Space style={{ marginBottom: 4 }}>
+                <Input 
+                  value={newName} 
+                  onChange={(e) => setNewName(e.target.value)} 
+                  onPressEnter={handleUpdateProfile}
+                  disabled={updating}
+                  style={{ width: 250 }}
+                  placeholder="Nhập họ và tên..."
+                />
+                <Button type="primary" icon={<SaveOutlined />} loading={updating} onClick={handleUpdateProfile}>Lưu</Button>
+                <Button icon={<CloseOutlined />} disabled={updating} onClick={() => setEditingName(false)} />
+              </Space>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                <Title level={4} style={{ margin: 0, color: isDark ? '#f1f5f9' : '#0f172a' }}>
+                  {user?.full_name || 'User'}
+                </Title>
+                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => { setNewName(user?.full_name || ''); setEditingName(true); }} />
+              </div>
+            )}
+            <Text type="secondary" style={{ display: 'block' }}>@{user?.username}</Text>
             <div style={{ marginTop: 8 }}>
               <Tag
                 color={user?.role ? roleColors[user.role] : 'default'}

@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 export type UserRole = 'admin' | 'technician' | 'sales';
@@ -73,7 +73,30 @@ export interface MaintenanceTicket {
 export interface TicketListResponse { tickets: MaintenanceTicket[]; total: number; page: number; limit: number; total_pages: number; }
 
 export interface DashboardStats {
-  total_parts: number; low_stock_count: number; pending_tickets: number; completed_this_month: number; total_customers: number; total_suppliers: number; active_warranties: number; sales_this_month: number; purchases_this_month: number; total_revenue: number; tickets_over_time: { date: string; count: number }[]; category_distribution: { category: string; count: number }[];
+  total_parts: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  in_stock_count: number;
+  pending_tickets: number;
+  completed_this_month: number;
+  total_customers: number;
+  total_suppliers: number;
+  active_warranties: number;
+  total_serial_units: number;
+  sales_this_month: number;
+  purchases_this_month: number;
+  total_revenue: number;
+  tickets_over_time: { date: string; count: number }[];
+  category_distribution: { category: string; count: number; total_stock: number; total_value: number }[];
+  top_by_value: { name: string; sku_code: string; category: string; stock_quantity: number; unit_price: number; stock_value: number }[];
+  top_selling: { sku_id: string; name: string; total_qty: number; total_revenue: number }[];
+  monthly_revenue: { month: string; revenue: number; orders: number }[];
+  ticket_status_dist: { status: string; count: number }[];
+  warranty_status_dist: { status: string; count: number }[];
+  serial_status_dist: { status: string; count: number }[];
+  rma_status_dist: { status: string; count: number }[];
+  po_status_dist: { status: string; count: number; total: number }[];
+  top_customers: { name: string; total_spent: number; order_count: number; type: string }[];
 }
 
 // ── Phase 1: Serial Units ──

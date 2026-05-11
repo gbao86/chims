@@ -208,10 +208,19 @@ async def update_inventory(
             status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
         )
 
-    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
-    if "image_urls" in update_data and not update_data["image_urls"] and update_data.get("image_url"):
-        update_data["image_urls"] = [update_data["image_url"]]
+    raw = update.model_dump()
+    update_data = {k: v for k, v in raw.items() if v is not None}
+
+    # Handle image_urls explicitly (even if empty list was sent)
+    if raw.get("image_urls") is not None:
+        update_data["image_urls"] = raw["image_urls"]
+        if raw["image_urls"]:
+            update_data["image_url"] = raw["image_urls"][0]
+    elif update_data.get("image_url"):
+        update_data.setdefault("image_urls", [update_data["image_url"]])
+
     update_data["updated_at"] = datetime.now(timezone.utc)
+
 
     # Recompute stock status if quantity changed
     if "stock_quantity" in update_data:

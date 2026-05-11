@@ -60,8 +60,6 @@ export default function SerialUnitsPage() {
   useEffect(() => {
     if (editUnit) {
       editForm.setFieldsValue(editUnit);
-    } else {
-      editForm.resetFields();
     }
   }, [editUnit, editForm]);
 
@@ -221,8 +219,8 @@ export default function SerialUnitsPage() {
       </Modal>
 
       {/* Edit Unit Drawer */}
-      <Drawer open={!!editUnit} onClose={() => setEditUnit(null)} title={`Sửa ${editUnit?.serial_number || ''}`}
-        extra={<Button type="primary" onClick={handleEdit}>Lưu</Button>}>
+      <Drawer open={!!editUnit} onClose={() => { setEditUnit(null); editForm.resetFields(); }} title={`Sửa ${editUnit?.serial_number || ''}`}
+        destroyOnHidden extra={<Button type="primary" onClick={handleEdit}>Lưu</Button>}>
         <Form form={editForm} layout="vertical">
           <Form.Item name="condition" label="Tình trạng">
             <Select options={[{ value: 'new', label: 'Mới' }, { value: 'demo', label: 'Trưng bày' }, { value: 'rma', label: 'Bảo hành' }, { value: 'used', label: 'Đã sử dụng' }]} />

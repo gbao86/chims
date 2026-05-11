@@ -42,12 +42,12 @@ async def login(request: LoginRequest):
 
 @router.put('/profile', response_model=UserResponse)
 async def update_profile(request: UpdateProfileRequest, current_user: dict = Depends(get_current_user)):
-    "\"\"Update user profile."\"\"
+    """Update user profile."""
     db = get_db()
     
     result = await db.users.update_one(
         {'_id': current_user['_id']},
-        {'': {'full_name': request.full_name}}
+        {'$set': {'full_name': request.full_name}}
     )
     
     if result.modified_count == 0 and result.matched_count == 0:
