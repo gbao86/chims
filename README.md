@@ -337,7 +337,7 @@ chims/
 
 ## 👤 Tác giả
 
-**Trịnh Gia Bảo** — Sinh viên thực tập  
+**Trịnh Gia Bảo**
 📧 tiktokthu10@gmail.com  
 🔗 [github.com/gbao86](https://github.com/gbao86)
 
