@@ -36,6 +36,7 @@ dist/
 !frontend/next-env.d.ts
 !frontend/.eslintrc.json
 !backend/metadata.json
+!vercel.json
 *.db
 *.sqlite
 *.sqlite3
