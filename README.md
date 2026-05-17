@@ -13,6 +13,16 @@
 
 ---
 
+## 🌐 Triển khai (Deployment)
+
+| Dịch vụ | Nền tảng | URL |
+|---|---|---|
+| **Frontend** | Vercel | *(sẽ cập nhật sau)* |
+| **Backend API** | Render | *(sẽ cập nhật sau)* |
+| **API Docs** | Render (Swagger) | *(sẽ cập nhật sau)* |
+
+---
+
 ## 📋 Mục lục
 
 - [Giới thiệu](#-giới-thiệu)
