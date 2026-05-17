@@ -18,8 +18,8 @@
 | Dịch vụ | Nền tảng | URL |
 |---|---|---|
 | **Frontend** | Vercel | *(sẽ cập nhật sau)* |
-| **Backend API** | Render | *(sẽ cập nhật sau)* |
-| **API Docs** | Render (Swagger) | *(sẽ cập nhật sau)* |
+| **Backend API** | Render | [https://chims-backend.onrender.com](https://chims-backend.onrender.com) |
+| **API Docs** | Render (Swagger) | [https://chims-backend.onrender.com/docs](https://chims-backend.onrender.com/docs) |
 
 ---
 
