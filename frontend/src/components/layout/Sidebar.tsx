@@ -49,11 +49,20 @@ const sidebarStyles = `
     box-sizing: border-box;
   }
 
+  /* Force Ant Design's inner wrapper to be a flex column so flex:1 works on children */
+  .chims-sidebar .ant-layout-sider-children {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
   .chims-nav-scroll {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 8px 0;
+    min-height: 0; /* critical for flex children to scroll */
   }
 
   .chims-nav-scroll::-webkit-scrollbar {
