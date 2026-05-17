@@ -151,7 +151,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 60 }}>
+      <div style={{ height: 'calc(100vh - 72px - 72px)', overflowY: 'auto', overflowX: 'hidden' }}>
         <Menu
           theme="dark"
           mode="inline"
