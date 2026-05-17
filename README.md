@@ -18,8 +18,8 @@
 | Dịch vụ | Nền tảng | URL |
 |---|---|---|
 | **Frontend** | Vercel | *(sẽ cập nhật sau)* |
-| **Backend API** | Render | [https://chims-backend.onrender.com](https://chims-backend.onrender.com) |
-| **API Docs** | Render (Swagger) | [https://chims-backend.onrender.com/docs](https://chims-backend.onrender.com/docs) |
+| **Backend API** | Render | [![API](https://img.shields.io/badge/API-Live-009688?logo=render&logoColor=white)](https://chims-backend.onrender.com) |
+| **API Docs** | Render (Swagger) | [![Swagger](https://img.shields.io/badge/Swagger-Docs-85EA2D?logo=swagger&logoColor=black)](https://chims-backend.onrender.com/docs) |
 
 ---
 
