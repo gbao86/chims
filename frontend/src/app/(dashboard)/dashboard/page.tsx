@@ -247,7 +247,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                   <XAxis dataKey="month" tick={axisStyle} axisLine={false} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={fmtM} width={55} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name?: string) => [fmtVND(v), name === 'revenue' ? 'Doanh thu' : 'Đơn hàng']} labelFormatter={l => `Tháng ${l}`} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name?: any) => [fmtVND(v), name === 'revenue' ? 'Doanh thu' : 'Đơn hàng']} labelFormatter={l => `Tháng ${l}`} />
                   <Bar dataKey="revenue" name="Doanh thu" fill="url(#revGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
