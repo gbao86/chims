@@ -51,8 +51,9 @@ app.add_middleware(
         "http://192.168.1.83:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
-        "https://chims-ten.vercel.app",
     ],
+    # Allow all Vercel deployment URLs (production + preview) via regex
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
