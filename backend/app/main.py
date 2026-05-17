@@ -51,6 +51,7 @@ app.add_middleware(
         "http://192.168.1.83:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "https://chims-ten.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
