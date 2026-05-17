@@ -4,6 +4,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from app.database import connect_db, close_db
 from app.auth.routes import router as auth_router
@@ -80,11 +81,106 @@ app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 
 
-@app.get("/", tags=["Root"])
+@app.get("/", response_class=HTMLResponse, tags=["Root"])
 async def root():
-    return {
-        "message": "CHIMS API is running",
-        "docs": "/docs",
-        "version": "1.0.0",
+    html = """<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CHIMS API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0d18;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
     }
+    .card {
+      background: linear-gradient(135deg, #0f1629 0%, #131929 100%);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 24px;
+      padding: 48px 56px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.08) inset;
+      text-align: center;
+    }
+    .logo {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+      box-shadow: 0 8px 32px rgba(99,102,241,0.4);
+    }
+    h1 { font-size: 28px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.02em; }
+    .sub { color: #64748b; font-size: 14px; margin-top: 6px; letter-spacing: 0.04em; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: #4ade80;
+      font-size: 13px; font-weight: 600;
+      padding: 6px 16px; border-radius: 999px;
+      margin: 20px auto 32px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .links { display: flex; flex-direction: column; gap: 12px; }
+    .link-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(99,102,241,0.07);
+      border: 1px solid rgba(99,102,241,0.18);
+      border-radius: 12px;
+      padding: 14px 20px;
+      text-decoration: none;
+      color: #c7d2fe;
+      font-size: 14px; font-weight: 500;
+      transition: all 0.18s ease;
+    }
+    .link-btn:hover {
+      background: rgba(99,102,241,0.15);
+      border-color: rgba(99,102,241,0.4);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(99,102,241,0.2);
+    }
+    .link-btn span { opacity: 0.5; font-size: 18px; }
+    .version { margin-top: 32px; color: #334155; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⚡</div>
+    <h1>CHIMS API</h1>
+    <p class="sub">Computer Hardware Inventory & Management System</p>
+    <div class="badge"><div class="dot"></div> API đang hoạt động — v1.0.0</div>
+    <div class="links">
+      <a class="link-btn" href="/docs">
+        <div>📄 &nbsp;Swagger UI — Tài liệu API tương tác</div>
+        <span>→</span>
+      </a>
+      <a class="link-btn" href="/redoc">
+        <div>📘 &nbsp;ReDoc — Tài liệu API đầy đủ</div>
+        <span>→</span>
+      </a>
+      <a class="link-btn" href="/api/dashboard/stats">
+        <div>📊 &nbsp;Health Check — Dashboard Stats</div>
+        <span>→</span>
+      </a>
+    </div>
+    <p class="version">FastAPI · Motor · MongoDB Atlas · Python 3.11</p>
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
 
