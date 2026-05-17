@@ -286,7 +286,7 @@ export default function DashboardPage() {
                     <Cell key={entry.category} fill={CATEGORY_COLORS[entry.category] || PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [`${v} SKU`, name]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: any) => [`${v} SKU`, name]} />
                 <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}>{v}</span>} />
               </PieChart>
             </ResponsiveContainer>
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                   <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                   <YAxis type="category" dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} width={130} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [name === 'SL bán' ? `${v} cái` : fmtVND(v), name]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: any) => [name === 'SL bán' ? `${v} cái` : fmtVND(v), name]} />
                   <Bar dataKey="SL bán" fill="url(#sellGrad)" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                     <Pie data={data} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3}>
                       {data.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [`${v}`, name]} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: any) => [`${v}`, name]} />
                     <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}>{v}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
