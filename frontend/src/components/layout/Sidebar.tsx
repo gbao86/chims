@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -24,67 +24,73 @@ import {
   BuildOutlined,
   HomeOutlined,
   SafetyOutlined,
+  UsergroupAddOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAuth } from '@/lib/auth';
 
 const { Sider } = Layout;
 const { Text } = Typography;
 
-const menuGroups = [
-  {
-    title: 'Tổng quan',
-    items: [{ key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' }],
-  },
-  {
-    title: 'Kho & Catalog',
-    items: [
-      { key: '/inventory', icon: <InboxOutlined />, label: 'Kho linh kiện' },
-      { key: '/serial-units', icon: <BarcodeOutlined />, label: 'Serial Units' },
-      { key: '/catalog', icon: <ShopOutlined />, label: 'Catalog SKU' },
-      { key: '/warehouse', icon: <HomeOutlined />, label: 'Quản lý Kho' },
-    ],
-  },
-  {
-    title: 'Vận hành',
-    items: [
-      { key: '/build-pc', icon: <BuildOutlined />, label: 'Build PC' },
-      { key: '/sales', icon: <ReconciliationOutlined />, label: 'Bán hàng' },
-      { key: '/purchase', icon: <ShoppingCartOutlined />, label: 'Nhập hàng' },
-      { key: '/customers', icon: <TeamOutlined />, label: 'Khách hàng' },
-    ],
-  },
-  {
-    title: 'Dịch vụ',
-    items: [
-      { key: '/maintenance', icon: <ToolOutlined />, label: 'Bảo trì' },
-      { key: '/warranty', icon: <FileTextOutlined />, label: 'Bảo hành' },
-      { key: '/rma', icon: <SafetyOutlined />, label: 'RMA' },
-      { key: '/reports', icon: <ExperimentOutlined />, label: 'Báo cáo' },
-    ],
-  },
-  {
-    title: 'Hệ thống',
-    items: [{ key: '/settings', icon: <SettingOutlined />, label: 'Cài đặt' }],
-  },
-];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const items = useMemo(
-    () =>
-      menuGroups.flatMap((group) => [
-        {
-          type: 'group' as const,
-          label: collapsed ? null : group.title,
-          children: group.items,
-        },
-      ]),
-    [collapsed]
+    () => [
+      {
+        type: 'group' as const,
+        label: collapsed ? null : 'Tổng quan',
+        children: [{ key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' }],
+      },
+      {
+        type: 'group' as const,
+        label: collapsed ? null : 'Kho & Catalog',
+        children: [
+          { key: '/inventory', icon: <InboxOutlined />, label: 'Kho linh kiện' },
+          { key: '/serial-units', icon: <BarcodeOutlined />, label: 'Serial Units' },
+          { key: '/catalog', icon: <ShopOutlined />, label: 'Catalog SKU' },
+          { key: '/warehouse', icon: <HomeOutlined />, label: 'Quản lý Kho' },
+        ],
+      },
+      {
+        type: 'group' as const,
+        label: collapsed ? null : 'Vận hành',
+        children: [
+          { key: '/build-pc', icon: <BuildOutlined />, label: 'Build PC' },
+          { key: '/sales', icon: <ReconciliationOutlined />, label: 'Bán hàng' },
+          { key: '/purchase', icon: <ShoppingCartOutlined />, label: 'Nhập hàng' },
+          { key: '/customers', icon: <TeamOutlined />, label: 'Khách hàng' },
+          ...(isAdmin ? [{ key: '/staff', icon: <UsergroupAddOutlined />, label: 'Quản lý Nhân sự' }] : []),
+        ],
+      },
+      {
+        type: 'group' as const,
+        label: collapsed ? null : 'Dịch vụ',
+        children: [
+          { key: '/maintenance', icon: <ToolOutlined />, label: 'Bảo trì' },
+          { key: '/warranty', icon: <FileTextOutlined />, label: 'Bảo hành' },
+          { key: '/rma', icon: <SafetyOutlined />, label: 'RMA' },
+          { key: '/reports', icon: <ExperimentOutlined />, label: 'Báo cáo' },
+        ],
+      },
+      {
+        type: 'group' as const,
+        label: collapsed ? null : 'Hệ thống',
+        children: [
+          { key: '/audit', icon: <AuditOutlined />, label: 'Kiểm kê Kho' },
+          { key: '/settings', icon: <SettingOutlined />, label: 'Cài đặt' },
+        ],
+      },
+    ],
+    [collapsed, isAdmin]
   );
 
   return (

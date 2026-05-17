@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -51,7 +51,12 @@ export default function ReportsPage() {
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
-      link.download = `reports-summary.${type}`;
+
+      // Đọc tên file từ header Content-Disposition do backend trả về
+      const disposition: string = res.headers['content-disposition'] || '';
+      const match = disposition.match(/filename="?([^";\n]+)"?/i);
+      link.download = match?.[1] ?? `report_summary_${new Date().toLocaleString('vi-VN').replace(/[\s/:]/g, '-')}.${type}`;
+
       link.click();
       URL.revokeObjectURL(objectUrl);
     } catch {

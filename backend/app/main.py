@@ -23,6 +23,7 @@ from app.routes.builds import router as builds_router
 from app.routes.warehouses import router as warehouses_router
 from app.routes.rma import router as rma_router
 from app.routes.audit import router as audit_router
+from app.routes.users import router as users_router
 
 
 @asynccontextmanager
@@ -48,6 +49,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://192.168.1.83:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -72,6 +75,7 @@ app.include_router(builds_router, prefix="/api/builds", tags=["PC Builds"])
 app.include_router(warehouses_router, prefix="/api/warehouses", tags=["Warehouses"])
 app.include_router(rma_router, prefix="/api/rma", tags=["RMA"])
 app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])
+app.include_router(users_router, prefix="/api/users", tags=["Users"])
 
 
 @app.get("/", tags=["Root"])

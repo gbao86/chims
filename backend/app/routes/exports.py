@@ -5,15 +5,45 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from io import BytesIO, StringIO
 import csv
+import os
 
 from openpyxl import Workbook
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+
+FONT_FAMILY = "Arial"
+FONT_BOLD = "Arial-Bold"
+
+
+def _register_pdf_fonts():
+    if FONT_FAMILY in pdfmetrics.getRegisteredFontNames():
+        return
+
+    font_root = os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")
+    font_path = os.path.join(font_root, "arial.ttf")
+    bold_path = os.path.join(font_root, "arialbd.ttf")
+    fallback_path = os.path.join(font_root, "DejaVuSans.ttf")
+
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont(FONT_FAMILY, font_path))
+    if os.path.exists(bold_path):
+        pdfmetrics.registerFont(TTFont(FONT_BOLD, bold_path))
+
+    if FONT_FAMILY not in pdfmetrics.getRegisteredFontNames():
+        if os.path.exists(fallback_path):
+            pdfmetrics.registerFont(TTFont(FONT_FAMILY, fallback_path))
+            pdfmetrics.registerFont(TTFont(FONT_BOLD, fallback_path))
+        elif os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont(FONT_FAMILY, font_path))
+            if os.path.exists(bold_path):
+                pdfmetrics.registerFont(TTFont(FONT_BOLD, bold_path))
 
 router = APIRouter()
 
@@ -59,13 +89,16 @@ async def export_inventory_xlsx(current_user: dict = Depends(get_current_user)):
 
 @router.get("/inventory.pdf")
 async def export_inventory_pdf(current_user: dict = Depends(get_current_user)):
+    _register_pdf_fonts()
     rows = await _get_inventory_rows()
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=18, leftMargin=18, topMargin=18, bottomMargin=18)
     styles = getSampleStyleSheet()
-    elements = [Paragraph("CHIMS Inventory Report", styles["Title"]), Spacer(1, 12)]
+    title_style = ParagraphStyle("TitleArial", parent=styles["Title"], fontName=FONT_BOLD, fontSize=16, leading=20)
+    elements = [Paragraph("CHIMS Inventory Report", title_style), Spacer(1, 12)]
     table = Table(rows, repeatRows=1)
     table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), FONT_FAMILY),
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6366f1')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),

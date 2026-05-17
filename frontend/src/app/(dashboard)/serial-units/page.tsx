@@ -4,11 +4,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Typography, Button, Select, Tag, Space, Input, App, Table, Modal, Form, Drawer, Descriptions, Row, Col, Statistic, Card, InputNumber, Upload } from 'antd';
-import { PlusOutlined, SearchOutlined, DeleteOutlined, ReloadOutlined, BarcodeOutlined, ImportOutlined, EditOutlined } from '@ant-design/icons';
+import { Typography, Button, Select, Tag, Space, Input, App, Table, Modal, Form, Drawer, Descriptions, Row, Col, Card, Tooltip } from 'antd';
+import { PlusOutlined, SearchOutlined, ReloadOutlined, BarcodeOutlined, ImportOutlined, EditOutlined, CameraOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import { SerialUnit, ItemCondition, SerialStatus, InventoryItem, InventoryListResponse } from '@/types';
 import { useTheme } from '@/components/ThemeProvider';
+import CameraScanner from '@/components/serial-units/CameraScanner';
 
 const { Title, Text } = Typography;
 
@@ -22,6 +23,7 @@ export default function SerialUnitsPage() {
   const { message } = App.useApp();
   const [items, setItems] = useState<SerialUnit[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [warehouses, setWarehouses] = useState<{ id: string; name: string; code: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -34,6 +36,9 @@ export default function SerialUnitsPage() {
   const [scanCode, setScanCode] = useState('');
   const [scanResult, setScanResult] = useState<any>(null);
   const [editUnit, setEditUnit] = useState<SerialUnit | null>(null);
+  // Camera scanner states
+  const [cameraForAdd, setCameraForAdd] = useState(false);
+  const [cameraForBulk, setCameraForBulk] = useState(false);
   const [form] = Form.useForm();
   const [bulkForm] = Form.useForm();
   const [editForm] = Form.useForm();
@@ -45,13 +50,15 @@ export default function SerialUnitsPage() {
       if (search) params.search = search;
       if (condFilter) params.condition = condFilter;
       if (statusFilter) params.status = statusFilter;
-      const [serialRes, invRes] = await Promise.all([
+      const [serialRes, invRes, whRes] = await Promise.all([
         api.get('/api/serial-units', { params }),
         api.get<InventoryListResponse>('/api/inventory', { params: { limit: 100 } }),
+        api.get('/api/warehouses'),
       ]);
       setItems(serialRes.data.items || []);
       setTotal(serialRes.data.total || 0);
       setInventory(invRes.data.items);
+      setWarehouses((whRes.data.warehouses || []).map((w: any) => ({ id: w.id, name: w.name, code: w.code })));
     } finally { setLoading(false); }
   }, [page, search, condFilter, statusFilter]);
 
@@ -152,7 +159,17 @@ export default function SerialUnitsPage() {
       <Modal open={addOpen} onCancel={() => setAddOpen(false)} onOk={handleAdd}
         title="Thêm Serial Unit" okText="Thêm" cancelText="Hủy" destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ condition: 'new' }}>
-          <Form.Item name="serial_number" label="Serial Number" rules={[{ required: true }]}><Input placeholder="Nhập hoặc quét serial" /></Form.Item>
+          <Form.Item name="serial_number" label="Serial Number" rules={[{ required: true }]}>
+            <Space.Compact style={{ width: '100%' }}>
+              <Form.Item name="serial_number" noStyle rules={[{ required: true }]}>
+                <Input placeholder="Nhập hoặc quét serial" />
+              </Form.Item>
+              <Tooltip title="Quét bằng Camera">
+                <Button icon={<CameraOutlined />} onClick={() => setCameraForAdd(true)}
+                  style={{ borderColor: '#6366f1', color: '#6366f1' }} />
+              </Tooltip>
+            </Space.Compact>
+          </Form.Item>
           <Form.Item name="inventory_id" label="Sản phẩm (SPU)" rules={[{ required: true }]}>
             <Select showSearch optionFilterProp="label"
               options={inventory.map(i => ({ value: i.id, label: `${i.sku_code} — ${i.name}` }))} />
@@ -164,12 +181,28 @@ export default function SerialUnitsPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="location_code" label="Vị trí"><Input placeholder="VD: A1-01" /></Form.Item>
+              <Form.Item name="location_code" label="Vị trí kệ"><Input placeholder="VD: A1-01" /></Form.Item>
             </Col>
           </Row>
+          <Form.Item name="warehouse_id" label="Kho lưu trữ">
+            <Select allowClear placeholder="Chọn kho"
+              options={warehouses.map(w => ({ value: w.id, label: `${w.code} — ${w.name}` }))} />
+          </Form.Item>
           <Form.Item name="notes" label="Ghi chú"><Input.TextArea rows={2} /></Form.Item>
         </Form>
       </Modal>
+
+      {/* Camera Scanner for Add Single */}
+      <CameraScanner
+        open={cameraForAdd}
+        onClose={() => setCameraForAdd(false)}
+        title="Quét Serial Number bằng Camera"
+        onDetected={(code) => {
+          form.setFieldValue('serial_number', code);
+          setCameraForAdd(false);
+          message.success(`Đã quét: ${code}`);
+        }}
+      />
 
       {/* Bulk Import Modal */}
       <Modal open={bulkOpen} onCancel={() => setBulkOpen(false)} onOk={handleBulkAdd}
@@ -179,15 +212,54 @@ export default function SerialUnitsPage() {
             <Select showSearch optionFilterProp="label"
               options={inventory.map(i => ({ value: i.id, label: `${i.sku_code} — ${i.name}` }))} />
           </Form.Item>
-          <Form.Item name="serial_numbers_text" label="Danh sách Serial (mỗi dòng 1 serial)" rules={[{ required: true }]}>
-            <Input.TextArea rows={6} placeholder={"SN-001\nSN-002\nSN-003"} />
+          <Form.Item
+            name="serial_numbers_text"
+            label={
+              <Space>
+                <span>Danh sách Serial <span style={{ color: '#ff4d4f' }}>*</span></span>
+                <Tooltip title="Quét nhiều mã liên tiếp bằng Camera — mỗi mã sẽ được thêm vào danh sách">
+                  <Button size="small" icon={<CameraOutlined />} onClick={() => setCameraForBulk(true)}
+                    style={{ borderColor: '#6366f1', color: '#6366f1', fontSize: 12 }}>
+                    Quét Camera
+                  </Button>
+                </Tooltip>
+              </Space>
+            }
+            rules={[{ required: true, message: 'Nhập ít nhất 1 serial' }]}
+          >
+            <Input.TextArea rows={6} placeholder={"SN-001\nSN-002\nSN-003\n(Mỗi dòng 1 serial, hoặc quét Camera ở trên)"} />
           </Form.Item>
           <Form.Item name="condition" label="Tình trạng">
             <Select options={[{ value: 'new', label: 'Mới' }, { value: 'demo', label: 'Trưng bày' }, { value: 'used', label: 'Đã sử dụng' }]} />
           </Form.Item>
-          <Form.Item name="location_code" label="Vị trí"><Input placeholder="VD: A1-01" /></Form.Item>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="warehouse_id" label="Kho lưu trữ">
+                <Select allowClear placeholder="Chọn kho"
+                  options={warehouses.map(w => ({ value: w.id, label: `${w.code} — ${w.name}` }))} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="location_code" label="Vị trí kệ"><Input placeholder="VD: A1-01" /></Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
+
+      {/* Camera Scanner for Bulk Import — appends each scan as a new line */}
+      <CameraScanner
+        open={cameraForBulk}
+        onClose={() => setCameraForBulk(false)}
+        title="Quét hàng loạt Serial Number"
+        onDetected={(code) => {
+          const current: string = bulkForm.getFieldValue('serial_numbers_text') || '';
+          const lines = current ? current.split('\n').filter(Boolean) : [];
+          if (!lines.includes(code)) {
+            bulkForm.setFieldValue('serial_numbers_text', [...lines, code].join('\n'));
+            message.success(`Đã thêm: ${code}`);
+          }
+        }}
+      />
 
       {/* Scan Modal */}
       <Modal open={scanOpen} onCancel={() => setScanOpen(false)} title="🔍 Quét mã Serial / Barcode" footer={null} destroyOnHidden>
@@ -228,7 +300,11 @@ export default function SerialUnitsPage() {
           <Form.Item name="status" label="Trạng thái">
             <Select options={[{ value: 'available', label: 'Có sẵn' }, { value: 'sold', label: 'Đã bán' }, { value: 'rma', label: 'Đang BH' }, { value: 'reserved', label: 'Đã giữ' }]} />
           </Form.Item>
-          <Form.Item name="location_code" label="Vị trí"><Input /></Form.Item>
+          <Form.Item name="warehouse_id" label="Kho lưu trữ">
+            <Select allowClear placeholder="Chọn kho"
+              options={warehouses.map(w => ({ value: w.id, label: `${w.code} — ${w.name}` }))} />
+          </Form.Item>
+          <Form.Item name="location_code" label="Vị trí kệ"><Input placeholder="VD: A1-01" /></Form.Item>
           <Form.Item name="notes" label="Ghi chú"><Input.TextArea rows={3} /></Form.Item>
         </Form>
       </Drawer>

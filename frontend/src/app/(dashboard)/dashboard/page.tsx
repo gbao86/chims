@@ -87,12 +87,16 @@ function CustomTooltip({ active, payload, label, isDark, formatter }: any) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { isDark } = useTheme();
 
   useEffect(() => {
     api.get<DashboardStats>('/api/dashboard/stats')
       .then(r => setStats(r.data))
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        setError('Không thể tải dữ liệu Dashboard. Vui lòng kiểm tra kết nối Backend.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -100,7 +104,19 @@ export default function DashboardPage() {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><Spin size="large" /></div>;
   }
 
-  const s = stats!;
+  if (error || !stats) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '60vh', gap: 16 }}>
+        <WarningOutlined style={{ fontSize: 48, color: '#f59e0b' }} />
+        <Title level={4} style={{ margin: 0, color: isDark ? '#f1f5f9' : '#0f172a' }}>Lỗi tải Dashboard</Title>
+        <Text style={{ color: isDark ? '#94a3b8' : '#64748b', textAlign: 'center', maxWidth: 400 }}>
+          {error || 'Không nhận được dữ liệu từ server. Vui lòng thử lại.'}
+        </Text>
+      </div>
+    );
+  }
+
+  const s = stats;
   const stockHealth = s.total_parts > 0 ? Math.round((s.in_stock_count / s.total_parts) * 100) : 0;
 
   // Prepare monthly revenue chart (fill in empty months)
@@ -231,7 +247,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                   <XAxis dataKey="month" tick={axisStyle} axisLine={false} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={fmtM} width={55} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [fmtVND(v), name === 'revenue' ? 'Doanh thu' : 'Đơn hàng']} labelFormatter={l => `Tháng ${l}`} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name?: string) => [fmtVND(v), name === 'revenue' ? 'Doanh thu' : 'Đơn hàng']} labelFormatter={l => `Tháng ${l}`} />
                   <Bar dataKey="revenue" name="Doanh thu" fill="url(#revGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
