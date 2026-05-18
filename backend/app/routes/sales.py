@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,6 +23,7 @@ def serialize_sales_order(doc: dict) -> dict:
         "customer_phone": doc.get("customer_phone", ""),
         "items": doc.get("items", []),
         "subtotal": doc.get("subtotal", 0),
+        "item_discounts_total": doc.get("item_discounts_total", 0),
         "discount_total": doc.get("discount_total", 0),
         "total_amount": doc.get("total_amount", 0),
         "payment_method": doc.get("payment_method", "cash"),
@@ -105,17 +106,46 @@ async def create_sales_order(
 
     items_data = await _build_sales_items(db, data.items)
     subtotal = sum(i["unit_price"] * i["quantity"] for i in items_data)
+    # item_discounts = sum of (discount_per_unit × quantity) for each line
     item_discounts = sum(i["discount"] * i["quantity"] for i in items_data)
     total_amount = subtotal - item_discounts - data.discount_total
 
+    # Auto-upsert customer into customers collection (phone as unique key)
+    customer_id = data.customer_id
+    if data.customer_name and data.customer_phone and not customer_id:
+        existing = await db.customers.find_one({"phone": data.customer_phone})
+        if existing:
+            customer_id = str(existing["_id"])
+        else:
+            last = await db.customers.find_one(sort=[("created_at", -1)])
+            try:
+                num = int(last["code"].split("-")[1]) + 1 if last and "code" in last else 1
+            except (IndexError, ValueError, TypeError):
+                num = 1
+            new_cust = {
+                "code": f"KH-{num:04d}",
+                "name": data.customer_name,
+                "phone": data.customer_phone,
+                "email": "",
+                "address": "",
+                "type": "individual",
+                "total_spent": 0,
+                "order_count": 0,
+                "created_at": now,
+                "updated_at": now,
+            }
+            res_cust = await db.customers.insert_one(new_cust)
+            customer_id = str(res_cust.inserted_id)
+
     doc = {
         "invoice_number": invoice,
-        "customer_id": data.customer_id,
+        "customer_id": customer_id,
         "customer_name": data.customer_name,
         "customer_phone": data.customer_phone,
         "items": items_data,
         "subtotal": subtotal,
-        "discount_total": data.discount_total + item_discounts,
+        "item_discounts_total": item_discounts,
+        "discount_total": data.discount_total,
         "total_amount": max(total_amount, 0),
         "payment_method": data.payment_method.value,
         "status": SalesStatus.DRAFT.value,
@@ -151,18 +181,32 @@ async def update_sales_order(
     subtotal = sum(i["unit_price"] * i["quantity"] for i in items_data)
     item_discounts = sum(i["discount"] * i["quantity"] for i in items_data)
     total_amount = subtotal - item_discounts - data.discount_total
+    now = datetime.now(timezone.utc)
+
+    # Auto-upsert customer if phone provided and no customer_id
+    customer_id = data.customer_id
+    if data.customer_name and data.customer_phone and not customer_id:
+        existing = await db.customers.find_one({"phone": data.customer_phone})
+        if existing:
+            customer_id = str(existing["_id"])
+            # Update name in case it changed
+            await db.customers.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {"name": data.customer_name, "updated_at": now}}
+            )
 
     update_data = {
-        "customer_id": data.customer_id,
+        "customer_id": customer_id,
         "customer_name": data.customer_name,
         "customer_phone": data.customer_phone,
         "items": items_data,
         "subtotal": subtotal,
-        "discount_total": data.discount_total + item_discounts,
+        "item_discounts_total": item_discounts,
+        "discount_total": data.discount_total,
         "total_amount": max(total_amount, 0),
         "payment_method": data.payment_method.value,
         "notes": data.notes,
-        "updated_at": datetime.now(timezone.utc),
+        "updated_at": now,
     }
     await db.sales_orders.update_one({"_id": oid}, {"$set": update_data})
     updated = await db.sales_orders.find_one({"_id": oid})

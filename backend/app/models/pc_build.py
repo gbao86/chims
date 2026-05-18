@@ -70,4 +70,3 @@ class PCBuildResponse(BaseModel):
     notes: str = ""
     created_at: datetime
     updated_at: datetime
-

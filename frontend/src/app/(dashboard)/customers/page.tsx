@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -44,24 +44,26 @@ export default function CustomersPage() {
   return (
     <div>
       <Title level={2}>Customers</Title>
-      <Paragraph type="secondary">Danh sách khách hàng từ backend.</Paragraph>
+      <Paragraph type="secondary">Danh sách khách hàng được tự động tổng hợp từ các đơn bán hàng.</Paragraph>
       <Input.Search allowClear placeholder="Tìm tên, điện thoại, email, mã..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 360, marginBottom: 16 }} />
-      <Card style={{ marginBottom: 16 }}><Text strong>Tổng chi tiêu khách hàng: </Text><Text>{totalSpent.toLocaleString('vi-VN')} ₫</Text></Card>
+      <Card style={{ marginBottom: 16 }}>
+        <Text strong>Tổng chi tiêu khách hàng: </Text>
+        <Text>{totalSpent.toLocaleString('vi-VN')} ₫</Text>
+      </Card>
       <Table
         loading={loading}
         rowKey="id"
         dataSource={customers}
         columns={[
-          { title: 'Mã', dataIndex: 'code' },
+          { title: 'Mã', dataIndex: 'code', render: (v: string) => <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#6366f1' }}>{v}</span> },
           { title: 'Tên', dataIndex: 'name' },
           { title: 'SĐT', dataIndex: 'phone' },
           { title: 'Email', dataIndex: 'email' },
           { title: 'Loại', dataIndex: 'type', render: (v: string) => <Tag color={v === 'business' ? 'blue' : 'default'}>{v}</Tag> },
-          { title: 'Đơn', dataIndex: 'order_count' },
-          { title: 'Đã chi', dataIndex: 'total_spent', render: (v: number) => `${v.toLocaleString('vi-VN')} ₫` },
+          { title: 'Đơn', dataIndex: 'order_count', align: 'center' as const },
+          { title: 'Đã chi', dataIndex: 'total_spent', align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 600, color: v > 0 ? '#22c55e' : undefined }}>{v.toLocaleString('vi-VN')} ₫</span> },
         ]}
       />
     </div>
   );
 }
-

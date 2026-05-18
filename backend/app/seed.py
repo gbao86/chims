@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 """
@@ -110,7 +110,7 @@ async def seed():
 
     for item in inventory_items:
         if not item.get("image_url"):
-            item["image_url"] = generate_placeholder_image_url(item["name"], item["category"])
+            item["image_url"] = local_image_url(item["sku_code"])
         item["status"] = compute_stock_status(item["stock_quantity"]).value
         item["created_at"] = now - timedelta(days=30)
         item["updated_at"] = now
