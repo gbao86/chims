@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -57,10 +57,17 @@ export default function SalesPage() {
 
   const totalRevenue = useMemo(() => orders.reduce((s, o) => s + o.total_amount, 0), [orders]);
 
+  const [saving, setSaving] = useState(false);
+
   const submit = async () => {
-    const values = await form.validateFields();
+    let values;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return; // validation failed, Ant Design already highlights the fields
+    }
     const payload = {
-      customer_id: values.customer_id,
+      customer_id: values.customer_id || null,
       customer_name: values.customer_name,
       customer_phone: values.customer_phone,
       items: values.items,
@@ -68,17 +75,25 @@ export default function SalesPage() {
       payment_method: values.payment_method,
       notes: values.notes || '',
     };
-    if (editOrder) {
-      await api.put(`/api/sales/${editOrder.id}`, payload);
-      message.success('Cập nhật đơn hàng thành công');
-    } else {
-      await api.post('/api/sales', payload);
-      message.success('Tạo đơn hàng thành công');
+    setSaving(true);
+    try {
+      if (editOrder) {
+        await api.put(`/api/sales/${editOrder.id}`, payload);
+        message.success('Cập nhật đơn hàng thành công');
+      } else {
+        await api.post('/api/sales', payload);
+        message.success('Tạo đơn hàng thành công');
+      }
+      setCreateOpen(false);
+      setEditOrder(null);
+      form.resetFields();
+      fetchData();
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      message.error(typeof detail === 'string' ? detail : 'Lỗi lưu đơn hàng — vui lòng thử lại');
+    } finally {
+      setSaving(false);
     }
-    setCreateOpen(false);
-    setEditOrder(null);
-    form.resetFields();
-    fetchData();
   };
 
   return (
@@ -108,7 +123,7 @@ export default function SalesPage() {
         ]}
       />
 
-      <Drawer open={createOpen} onClose={() => { setCreateOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa đơn bán' : 'Tạo đơn bán'} size="large" extra={<Button type="primary" onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnHidden>
+      <Drawer open={createOpen} onClose={() => { setCreateOpen(false); setEditOrder(null); form.resetFields(); }} title={editOrder ? 'Sửa đơn bán' : 'Tạo đơn bán'} size="large" extra={<Button type="primary" loading={saving} onClick={submit}>{editOrder ? 'Lưu' : 'Tạo'}</Button>} destroyOnHidden>
         <Form form={form} layout="vertical" initialValues={{ payment_method: 'cash', items: [{ inventory_id: undefined, name: '', quantity: 1, unit_price: 0, discount: 0 }] }}>
           <Form.Item name="customer_id" label="Khách hàng">
             <Select allowClear options={customers} placeholder="Chọn khách hàng" />
