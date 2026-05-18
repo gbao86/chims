@@ -151,7 +151,14 @@ export default function SalesPage() {
               </div>
             )}
           </Form.List>
-          <Form.Item name="discount_total" label="Giảm giá tổng"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
+          <Form.Item
+            name="discount_total"
+            label="Giảm giá thêm cho toàn đơn (ngoài giảm giá từng dòng)"
+            tooltip="Nhập số tiền giảm thêm cho cả đơn hàng — ví dụ: voucher, ưu đãi thành viên. Giảm giá từng linh kiện đã tính riêng ở trên."
+          >
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="0 nếu không có" />
+          </Form.Item>
+
           <Form.Item name="notes" label="Ghi chú"><Input.TextArea rows={3} /></Form.Item>
         </Form>
       </Drawer>
