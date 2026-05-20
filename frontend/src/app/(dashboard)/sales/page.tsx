@@ -4,9 +4,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert, App, Button, Card, Col, Divider, Drawer, Form, Input,
-  InputNumber, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography,
+import { Alert, App, Button, Card, Col, Divider, Drawer, Form, Input,
+  InputNumber, Modal, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography,
 } from 'antd';
 import {
   DeleteOutlined, PlusOutlined, ReloadOutlined, ShoppingCartOutlined,
@@ -53,6 +52,21 @@ const paymentLabel: Record<string, string> = {
   transfer: 'Chuyển khoản',
   card: 'Thẻ',
 };
+
+// State machine: các trạng thái được phép chuyển tới từ mỗi trạng thái hiện tại
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  draft: ['confirmed', 'delivered', 'cancelled'],
+  confirmed: ['delivered', 'cancelled'],
+  delivered: ['cancelled'],
+  cancelled: [], // locked
+};
+
+const ALL_STATUS_OPTIONS = [
+  { value: 'draft', label: <Tag color="gold">Nháp</Tag>, text: 'Nháp' },
+  { value: 'confirmed', label: <Tag color="green">Đã xác nhận</Tag>, text: 'Đã xác nhận' },
+  { value: 'delivered', label: <Tag color="blue">Đã giao</Tag>, text: 'Đã giao' },
+  { value: 'cancelled', label: <Tag color="red">Đã hủy</Tag>, text: 'Đã hủy' },
+];
 
 export default function SalesPage() {
   const { isDark } = useTheme();
@@ -195,14 +209,30 @@ export default function SalesPage() {
     }
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: string) => {
-    try {
-      await api.put(`/api/sales/${orderId}/status`, { status: newStatus });
-      message.success(`Đã cập nhật trạng thái → ${statusLabel[newStatus]}`);
-      fetchData();
-    } catch (err: any) {
-      message.error(err?.response?.data?.detail || 'Lỗi cập nhật trạng thái');
-    }
+  const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
+    Modal.confirm({
+      title: 'Xác nhận thay đổi trạng thái',
+      content: (
+        <span>
+          Chuyển trạng thái từ{' '}
+          <Tag color={statusColor[currentStatus]}>{statusLabel[currentStatus]}</Tag>
+          {' '}→{' '}
+          <Tag color={statusColor[newStatus]}>{statusLabel[newStatus]}</Tag>?
+        </span>
+      ),
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      okButtonProps: { style: { background: '#6366f1', borderColor: '#6366f1' } },
+      async onOk() {
+        try {
+          await api.put(`/api/sales/${orderId}/status`, { status: newStatus });
+          message.success(`Đã cập nhật trạng thái → ${statusLabel[newStatus]}`);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.detail || 'Lỗi cập nhật trạng thái');
+        }
+      },
+    });
   };
 
   const totalRevenue = useMemo(() =>
@@ -314,20 +344,24 @@ export default function SalesPage() {
               render: (v: string) => <Tag>{paymentLabel[v] || v}</Tag>,
             },
             {
-              title: 'Trạng thái', dataIndex: 'status', width: 150,
-              render: (v: string, r: SalesOrder) => (
-                <Select
-                  size="small" value={v}
-                  onChange={(newStatus) => handleStatusChange(r.id, newStatus)}
-                  style={{ width: 140 }}
-                  options={[
-                    { value: 'draft', label: <Tag color="gold">Nháp</Tag> },
-                    { value: 'confirmed', label: <Tag color="green">Đã xác nhận</Tag> },
-                    { value: 'delivered', label: <Tag color="blue">Đã giao</Tag> },
-                    { value: 'cancelled', label: <Tag color="red">Đã hủy</Tag> },
-                  ]}
-                />
-              ),
+              title: 'Trạng thái', dataIndex: 'status', width: 170,
+              render: (v: string, r: SalesOrder) => {
+                const allowed = ALLOWED_TRANSITIONS[v] || [];
+                const isLocked = allowed.length === 0;
+                const options = ALL_STATUS_OPTIONS.filter(
+                  opt => opt.value === v || allowed.includes(opt.value)
+                );
+                return (
+                  <Select
+                    size="small" value={v}
+                    disabled={isLocked}
+                    onChange={(newStatus) => handleStatusChange(r.id, v, newStatus)}
+                    style={{ width: 155 }}
+                    title={isLocked ? 'Đơn hàng đã hủy không thể thay đổi trạng thái' : undefined}
+                    options={options}
+                  />
+                );
+              },
             },
             {
               title: 'Hành động', width: 120, align: 'center' as const,

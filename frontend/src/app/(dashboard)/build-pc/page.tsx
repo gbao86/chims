@@ -4,8 +4,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Typography, Button, Select, Card, Tag, Space, InputNumber, Input, App, Table, Popconfirm, Badge, Drawer, Form, Tooltip, Progress } from 'antd';
-import { PlusOutlined, ThunderboltOutlined, DeleteOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined, SearchOutlined, ReloadOutlined, BuildOutlined, DesktopOutlined, RobotOutlined, BulbOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Typography, Button, Select, Card, Tag, Space, InputNumber, Input, App, Table, Popconfirm, Badge, Drawer, Form, Tooltip, Progress, Modal } from 'antd';
+import { PlusOutlined, ThunderboltOutlined, DeleteOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined, SearchOutlined, ReloadOutlined, BuildOutlined, DesktopOutlined, RobotOutlined, BulbOutlined, ExclamationCircleOutlined, EditOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import { InventoryItem, InventoryListResponse, PCBuild, PCBuildComponent, CompatibilityLevel, Category } from '@/types';
 import { useTheme } from '@/components/ThemeProvider';
@@ -60,6 +60,7 @@ export default function BuildPCPage() {
     verdict?: string;
   } | null>(null);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [editBuild, setEditBuild] = useState<PCBuild | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -139,7 +140,49 @@ export default function BuildPCPage() {
       await api.post(`/api/builds/${id}/assemble`);
       message.success('Đã lắp ráp thành công!');
       fetchData();
-    } catch { message.error('Lỗi lắp ráp'); }
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Lỗi lắp ráp — linh kiện có thể không khả dụng');
+    }
+  };
+
+  const openEdit = (build: PCBuild) => {
+    setEditBuild(build);
+    setBuildName(build.build_name);
+    const comps: Record<string, { inventory_id: string; quantity: number }> = {};
+    for (const c of build.components) {
+      if (c.category && c.inventory_id) {
+        comps[c.category] = { inventory_id: c.inventory_id, quantity: c.quantity };
+      }
+    }
+    setSelectedComponents(comps);
+    setCompatResult(null);
+    setAiResult(null);
+    setBuilderOpen(true);
+  };
+
+  const handleUpdateBuild = async () => {
+    if (!editBuild) return;
+    if (!buildName.trim()) { message.warning('Nhập tên cấu hình'); return; }
+    const comps: PCBuildComponent[] = [];
+    for (const [cat, sel] of Object.entries(selectedComponents)) {
+      if (sel.inventory_id) {
+        const inv = inventory.find(i => i.id === sel.inventory_id);
+        comps.push({ category: cat, inventory_id: sel.inventory_id, quantity: sel.quantity, unit_price: inv?.unit_price || 0 });
+      }
+    }
+    if (comps.length === 0) { message.warning('Chọn ít nhất 1 linh kiện'); return; }
+    try {
+      await api.put(`/api/builds/${editBuild.id}`, { build_name: buildName, components: comps });
+      message.success('Cập nhật cấu hình thành công!');
+      setBuilderOpen(false);
+      setEditBuild(null);
+      setBuildName('');
+      setSelectedComponents({});
+      setCompatResult(null);
+      fetchData();
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Lỗi cập nhật cấu hình');
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -185,11 +228,18 @@ export default function BuildPCPage() {
             { title: 'PSU đề xuất', dataIndex: 'recommended_psu', width: 110, align: 'center', render: (v: number) => <Tag color="orange">{v}W</Tag> },
             { title: 'Tương thích', dataIndex: 'compatibility_status', width: 120, align: 'center', render: (v: CompatibilityLevel) => <Tag color={compatColors[v]} style={{ fontWeight: 600 }}>{compatLabels[v]}</Tag> },
             { title: 'Trạng thái', dataIndex: 'status', width: 120, align: 'center', render: (v: string) => <Tag color={statusColors[v]}>{v.toUpperCase()}</Tag> },
-            { title: 'Hành động', width: 140, align: 'center', render: (_: unknown, r: PCBuild) => (
+            { title: 'Hành động', width: 160, align: 'center', render: (_: unknown, r: PCBuild) => (
               <Space>
+                {r.status === 'draft' && <Tooltip title="Sửa cấu hình"><Button size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} /></Tooltip>}
                 {r.status === 'draft' && <Tooltip title="Lắp ráp"><Button type="primary" size="small" icon={<BuildOutlined />} onClick={() => handleAssemble(r.id)} /></Tooltip>}
-                <Popconfirm title="Xóa cấu hình này?" onConfirm={() => handleDelete(r.id)} okText="Xóa" cancelText="Hủy">
-                  <Button size="small" danger icon={<DeleteOutlined />} />
+                <Popconfirm
+                  title="Xóa cấu hình này?"
+                  description={r.status === 'sold' ? 'Không thể xóa cấu hình đã bán.' : 'Thao tác không thể hoàn tác.'}
+                  onConfirm={() => handleDelete(r.id)}
+                  okText="Xóa" cancelText="Hủy"
+                  disabled={r.status === 'sold'}
+                >
+                  <Button size="small" danger icon={<DeleteOutlined />} disabled={r.status === 'sold'} />
                 </Popconfirm>
               </Space>
             )},
@@ -212,9 +262,19 @@ export default function BuildPCPage() {
       </div>
 
       {/* Builder Drawer */}
-      <Drawer open={builderOpen} onClose={() => { setBuilderOpen(false); setCompatResult(null); }}
-        title="🖥️ Xây dựng cấu hình PC" size="large" destroyOnHidden
-        extra={<Button type="primary" onClick={handleCreateBuild} style={{ borderRadius: 10, fontWeight: 600, background: 'linear-gradient(135deg, #22c55e, #10b981)', border: 'none' }}>Lưu cấu hình</Button>}>
+      <Drawer
+        open={builderOpen}
+        onClose={() => { setBuilderOpen(false); setEditBuild(null); setBuildName(''); setSelectedComponents({}); setCompatResult(null); setAiResult(null); }}
+        title={editBuild ? '✏️ Sửa cấu hình PC' : '🖥️ Xây dựng cấu hình PC'}
+        size="large" destroyOnHidden
+        extra={
+          <Button type="primary"
+            onClick={editBuild ? handleUpdateBuild : handleCreateBuild}
+            style={{ borderRadius: 10, fontWeight: 600, background: 'linear-gradient(135deg, #22c55e, #10b981)', border: 'none' }}
+          >
+            {editBuild ? 'Cập nhật cấu hình' : 'Lưu cấu hình'}
+          </Button>
+        }>
 
         <Form layout="vertical">
           <Form.Item label="Tên cấu hình" required>

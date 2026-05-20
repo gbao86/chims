@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -161,14 +161,44 @@ async def update_rma_status(rma_id: str, data: RMAStatusUpdate, current_user: di
     if data.estimated_return_date:
         update_fields["estimated_return_date"] = data.estimated_return_date
 
-    # If returned to customer or replaced, restore serial unit
-    if data.status in [RMAStatus.RETURNED_TO_CUSTOMER, RMAStatus.REPLACED]:
+    # If returned to customer: restore old serial as available
+    if data.status == RMAStatus.RETURNED_TO_CUSTOMER:
         serial = rma.get("serial_number")
         if serial:
-            new_status = "available" if data.status == RMAStatus.RETURNED_TO_CUSTOMER else "sold"
             await db.serial_units.update_many(
-                {"serial_number": serial}, {"$set": {"status": new_status, "condition": "rma", "updated_at": now}},
+                {"serial_number": serial},
+                {"$set": {"status": "available", "condition": "used", "updated_at": now}},
             )
+
+    # If replaced: old serial → returned_to_vendor, new serial → sold, update warranty
+    elif data.status == RMAStatus.REPLACED:
+        old_serial = rma.get("serial_number")
+        new_serial = data.replacement_serial or rma.get("replacement_serial", "")
+
+        # Mark old (defective) serial as returned to vendor
+        if old_serial:
+            await db.serial_units.update_many(
+                {"serial_number": old_serial},
+                {"$set": {"status": "returned_to_vendor", "condition": "used", "updated_at": now}},
+            )
+
+        # Mark new (replacement) serial as sold
+        if new_serial:
+            await db.serial_units.update_many(
+                {"serial_number": new_serial},
+                {"$set": {"status": "sold", "condition": "new", "updated_at": now}},
+            )
+
+        # Update warranty record to reflect new serial number
+        warranty_id = rma.get("warranty_id")
+        if warranty_id and new_serial:
+            try:
+                await db.warranties.update_one(
+                    {"_id": ObjectId(warranty_id)},
+                    {"$set": {"serial_number": new_serial, "updated_at": now}},
+                )
+            except Exception:
+                pass
 
     await db.rma_tickets.update_one({"_id": oid}, {"$push": {"timeline": event}, "$set": update_fields})
     updated = await db.rma_tickets.find_one({"_id": oid})

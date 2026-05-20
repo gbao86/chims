@@ -160,16 +160,34 @@ async def assemble_build(build_id: str, current_user: dict = Depends(get_current
     if build["status"] != BuildStatus.DRAFT.value:
         raise HTTPException(status_code=400, detail="Only draft builds can be assembled")
     now = datetime.now(timezone.utc)
+
+    # Atomic decrement with rollback
+    locked_serials: list[dict] = []
     for comp in build.get("components", []):
         serial_id = comp.get("serial_unit_id")
-        if serial_id:
-            try:
+        if not serial_id:
+            continue
+        try:
+            serial_oid = ObjectId(serial_id)
+        except Exception:
+            continue
+        res = await db.serial_units.update_one(
+            {"_id": serial_oid, "status": SerialStatus.AVAILABLE.value},
+            {"$set": {"status": SerialStatus.IN_BUILD.value, "build_id": build_id, "updated_at": now}},
+        )
+        if res.modified_count == 0:
+            # Rollback all previously locked serials
+            for rb in locked_serials:
                 await db.serial_units.update_one(
-                    {"_id": ObjectId(serial_id), "status": SerialStatus.AVAILABLE.value},
-                    {"$set": {"status": SerialStatus.IN_BUILD.value, "build_id": build_id, "updated_at": now}},
+                    {"_id": rb["oid"]},
+                    {"$set": {"status": SerialStatus.AVAILABLE.value, "build_id": "", "updated_at": now}},
                 )
-            except Exception:
-                pass
+            raise HTTPException(
+                status_code=400,
+                detail=f"Serial '{comp.get('product_name', serial_id)}' không khả dụng (đã bán hoặc đang được sử dụng). Đã hoàn tác các linh kiện đã khóa."
+            )
+        locked_serials.append({"oid": serial_oid})
+
     await db.pc_builds.update_one({"_id": oid}, {"$set": {
         "status": BuildStatus.ASSEMBLED.value, "assembled_by": str(current_user["_id"]),
         "assembled_by_name": current_user.get("full_name", ""), "updated_at": now,
@@ -191,6 +209,53 @@ async def get_build(build_id: str, current_user: dict = Depends(get_current_user
     return serialize_build(build)
 
 
+@router.put("/{build_id}")
+async def update_build(build_id: str, data: PCBuildUpdate, current_user: dict = Depends(get_current_user)):
+    """Chỉnh sửa cấu hình PC — chỉ áp dụng cho build ở trạng thái draft."""
+    db = get_db()
+    try:
+        oid = ObjectId(build_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid build ID")
+    build = await db.pc_builds.find_one({"_id": oid})
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+    if build["status"] != BuildStatus.DRAFT.value:
+        raise HTTPException(status_code=400, detail="Chỉ có thể chỉnh sửa cấu hình ở trạng thái Nháp")
+
+    now = datetime.now(timezone.utc)
+    update_fields: dict = {"updated_at": now}
+
+    if data.build_name is not None:
+        update_fields["build_name"] = data.build_name.strip()
+
+    if data.notes is not None:
+        update_fields["notes"] = data.notes
+
+    if data.components is not None:
+        enriched = await _enrich_components(db, [c.model_dump() for c in data.components])
+        level, notes, total_tdp, recommended_psu, total_price = check_compatibility(enriched)
+        components_data = []
+        for c in enriched:
+            components_data.append({
+                "category": c.get("category", ""), "inventory_id": c.get("inventory_id", ""),
+                "serial_unit_id": c.get("serial_unit_id", ""), "product_name": c.get("product_name", ""),
+                "sku_code": c.get("sku_code", ""), "quantity": c.get("quantity", 1), "unit_price": c.get("unit_price", 0),
+            })
+        update_fields.update({
+            "components": components_data,
+            "total_price": total_price,
+            "total_tdp": total_tdp,
+            "recommended_psu": recommended_psu,
+            "compatibility_status": level,
+            "compatibility_notes": notes,
+        })
+
+    await db.pc_builds.update_one({"_id": oid}, {"$set": update_fields})
+    updated = await db.pc_builds.find_one({"_id": oid})
+    return serialize_build(updated)
+
+
 @router.delete("/{build_id}")
 async def delete_build(build_id: str, current_user: dict = Depends(get_current_user)):
     db = get_db()
@@ -201,6 +266,9 @@ async def delete_build(build_id: str, current_user: dict = Depends(get_current_u
     build = await db.pc_builds.find_one({"_id": oid})
     if not build:
         raise HTTPException(status_code=404, detail="Build not found")
+    # Block deletion of sold builds
+    if build["status"] == BuildStatus.SOLD.value:
+        raise HTTPException(status_code=400, detail="Không thể xóa cấu hình đã bán")
     if build["status"] == BuildStatus.ASSEMBLED.value:
         for comp in build.get("components", []):
             serial_id = comp.get("serial_unit_id")

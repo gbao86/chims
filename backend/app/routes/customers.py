@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -74,6 +74,11 @@ async def create_customer(
 ):
     db = get_db()
     now = datetime.now(timezone.utc)
+    # Check duplicate phone
+    if data.phone:
+        existing = await db.customers.find_one({"phone": data.phone})
+        if existing:
+            raise HTTPException(status_code=409, detail="Số điện thoại đã được sử dụng bởi khách hàng khác")
     code = await generate_customer_code(db)
     doc = {
         **data.model_dump(),
@@ -100,6 +105,11 @@ async def update_customer(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid ID")
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    # Check duplicate phone (exclude self)
+    if "phone" in update_data and update_data["phone"]:
+        conflict = await db.customers.find_one({"phone": update_data["phone"], "_id": {"$ne": oid}})
+        if conflict:
+            raise HTTPException(status_code=409, detail="Số điện thoại đã được sử dụng bởi khách hàng khác")
     update_data["updated_at"] = datetime.now(timezone.utc)
     result = await db.customers.update_one({"_id": oid}, {"$set": update_data})
     if result.matched_count == 0:
