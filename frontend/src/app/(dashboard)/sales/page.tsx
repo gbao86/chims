@@ -8,8 +8,9 @@ import { Alert, App, Button, Card, Col, Divider, Drawer, Form, Input,
   InputNumber, Modal, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography,
 } from 'antd';
 import {
-  DeleteOutlined, PlusOutlined, ReloadOutlined, ShoppingCartOutlined,
+  CameraOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, ShoppingCartOutlined,
 } from '@ant-design/icons';
+import CameraScanner from '@/components/serial-units/CameraScanner';
 import api from '@/lib/api';
 import { InventoryItem, InventoryListResponse } from '@/types';
 import { useTheme } from '@/components/ThemeProvider';
@@ -81,6 +82,10 @@ export default function SalesPage() {
   const [editOrder, setEditOrder] = useState<SalesOrder | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
+
+  // Camera scanner state (for sales form)
+  const [scannerOpen, setScannerOpen]   = useState(false);
+  const [scanFieldIdx, setScanFieldIdx] = useState<number>(0);
 
   // Live preview
   const formItems = Form.useWatch('items', form) || [];
@@ -163,6 +168,25 @@ export default function SalesPage() {
       form.setFieldValue(['items', fieldName, 'unit_price'], item.unit_price);
     }
   };
+
+  // ── Camera scan handler for Sales form ──────────────────────────────────
+  const handleScanDetected = useCallback((code: string) => {
+    setScannerOpen(false);
+    const c = code.trim().toLowerCase();
+    // Match by barcode field first, then sku_code, then name substring
+    const matched = inventory.find(i =>
+      (i.barcode && i.barcode.toLowerCase() === c) ||
+      i.sku_code.toLowerCase() === c ||
+      i.name.toLowerCase().includes(c)
+    );
+    if (matched) {
+      form.setFieldValue(['items', scanFieldIdx, 'inventory_id'], matched.id);
+      form.setFieldValue(['items', scanFieldIdx, 'unit_price'], matched.unit_price);
+      message.success(`✅ Tìm thấy: ${matched.name} — ${matched.unit_price.toLocaleString('vi-VN')} ₫`);
+    } else {
+      message.warning(`Không tìm thấy sản phẩm khớp mã: "${code}"`);
+    }
+  }, [inventory, scanFieldIdx, form, message]);
 
   const submit = async () => {
     let values;
@@ -443,14 +467,25 @@ export default function SalesPage() {
                   {fields.map((field) => (
                     <Card size="small" key={field.key}
                       style={{ marginBottom: 12, borderRadius: 8, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}` }}>
-                      <Form.Item {...field} name={[field.name, 'inventory_id']} label="Linh kiện" rules={[{ required: true, message: 'Chọn sản phẩm' }]}>
+                      <Form.Item {...field} name={[field.name, 'inventory_id']} label={
+                        <Space size={4}>
+                          <span>Linh kiện</span>
+                          <Button
+                            size="small" type="dashed" icon={<CameraOutlined />}
+                            style={{ fontSize: 11, height: 20, padding: '0 6px', color: '#6366f1', borderColor: '#6366f1' }}
+                            onClick={() => { setScanFieldIdx(field.name); setScannerOpen(true); }}
+                          >
+                            Quét mã
+                          </Button>
+                        </Space>
+                      } rules={[{ required: true, message: 'Chọn sản phẩm' }]}>
                         <Select
                           showSearch optionFilterProp="label"
                           options={inventory.map((i) => ({
                             value: i.id,
                             label: `${i.name} — ${i.unit_price.toLocaleString('vi-VN')} ₫ (Tồn: ${i.stock_quantity})`,
                           }))}
-                          placeholder="Chọn sản phẩm"
+                          placeholder="Chọn sản phẩm hoặc nhấn Quét mã"
                           onChange={(val) => handleSelectInventory(val, field.name)}
                         />
                       </Form.Item>
@@ -553,6 +588,14 @@ export default function SalesPage() {
           />
         </Form>
       </Drawer>
+
+      {/* ── Camera Scanner for Sales ── */}
+      <CameraScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={handleScanDetected}
+        title="Quét mã sản phẩm"
+      />
     </div>
   );
 }
