@@ -5,10 +5,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  App, Button, Card, Col, Form, Input, InputNumber,
-  Modal, Row, Select, Space, Statistic, Table, Tag, Typography,
+  App, Badge, Button, Card, Col, Descriptions, Drawer, Form, Input, InputNumber,
+  Modal, Row, Select, Space, Statistic, Table, Tag, Timeline, Typography,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { EyeOutlined, PlusOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -57,6 +57,8 @@ export default function WarrantyPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [modalOpen, setModalOpen]     = useState(false);
   const [saving, setSaving]           = useState(false);
+  const [detailOpen, setDetailOpen]   = useState(false);
+  const [selected, setSelected]       = useState<Warranty | null>(null);
   const [form] = Form.useForm();
 
   // Dropdown options
@@ -288,6 +290,16 @@ export default function WarrantyPage() {
                 </Tag>
               ),
             },
+            {
+              title: 'Hành động', width: 80, align: 'center' as const,
+              render: (_: unknown, r: Warranty) => (
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => { setSelected(r); setDetailOpen(true); }}
+                />
+              ),
+            },
           ]}
         />
       </div>
@@ -367,6 +379,89 @@ export default function WarrantyPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Drawer Chi tiết bảo hành */}
+      <Drawer
+        open={detailOpen}
+        onClose={() => { setDetailOpen(false); setSelected(null); }}
+        title="🛡️ Chi tiết phiếu bảo hành"
+        size="large"
+        destroyOnHidden
+      >
+        {selected && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Badge trạng thái */}
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🛡️</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{selected.warranty_code}</div>
+              <Tag color={STATUS_COLOR[selected.status]} style={{ marginTop: 8, fontSize: 13, padding: '2px 12px' }}>
+                {STATUS_LABEL[selected.status] || selected.status}
+              </Tag>
+            </div>
+
+            {/* Thông tin chi tiết */}
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Mã bảo hành">
+                <code style={{ color: '#22c55e', fontWeight: 700 }}>{selected.warranty_code}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="Khách hàng">
+                <span style={{ fontWeight: 600 }}>{selected.customer_name}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Sản phẩm">{selected.product_name}</Descriptions.Item>
+              <Descriptions.Item label="Serial Number">
+                <code style={{ color: '#6366f1' }}>{selected.serial_number || '—'}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="Thời hạn">
+                <Tag>{selected.warranty_months} tháng</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày mua">{fmtDate(selected.purchase_date)}</Descriptions.Item>
+              <Descriptions.Item label="Ngày hết hạn">
+                <span style={{ color: new Date(selected.expiry_date) < new Date() ? '#ef4444' : '#22c55e', fontWeight: 600 }}>
+                  {fmtDate(selected.expiry_date)}
+                </span>
+              </Descriptions.Item>
+              {selected.sales_order_id && (
+                <Descriptions.Item label="Đơn bán hàng">
+                  <code>{selected.sales_order_id}</code>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Số lần yêu cầu BH">
+                <Badge count={selected.claims?.length || 0} showZero color={selected.claims?.length > 0 ? '#f59e0b' : '#94a3b8'} />
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Lịch sử claims */}
+            {selected.claims && selected.claims.length > 0 && (
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>📋 Lịch sử yêu cầu bảo hành</div>
+                <Timeline
+                  items={selected.claims.map((c, i) => ({
+                    color: 'orange',
+                    children: (
+                      <div key={i} style={{ padding: '8px 12px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>{fmtDate(c.date)}</div>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>🔴 Sự cố: {c.issue}</div>
+                        {c.resolution && (
+                          <div style={{ color: '#22c55e' }}>✅ Xử lý: {c.resolution}</div>
+                        )}
+                        {c.cost > 0 && (
+                          <div style={{ color: '#6366f1', fontWeight: 600 }}>💰 Chi phí: {c.cost.toLocaleString('vi-VN')} ₫</div>
+                        )}
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+            )}
+
+            {(!selected.claims || selected.claims.length === 0) && (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                Chưa có yêu cầu bảo hành nào
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }
