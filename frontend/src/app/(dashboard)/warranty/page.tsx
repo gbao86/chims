@@ -86,30 +86,37 @@ export default function WarrantyPage() {
 
   // ── Tải dữ liệu cho dropdown khi mở modal ─────────────────────────────────
   const loadDropdowns = async () => {
+    // Khách hàng
     try {
-      const [custRes, invRes, saleRes] = await Promise.all([
-        api.get('/api/customers', { params: { limit: 200 } }),
-        api.get('/api/inventory',  { params: { limit: 200 } }),
-        api.get('/api/sales',      { params: { limit: 100, status: 'confirmed' } }),
-      ]);
+      const res = await api.get('/api/customers', { params: { limit: 200 } });
       setCustomers(
-        (custRes.data.customers || []).map((c: any) => ({
+        (res.data.customers || []).map((c: any) => ({
           value: c.id, label: `${c.name} — ${c.phone}`,
         }))
       );
+    } catch { message.warning('Không tải được danh sách khách hàng'); }
+
+    // Sản phẩm từ kho
+    try {
+      const res = await api.get('/api/inventory', { params: { limit: 200 } });
       setProducts(
-        (invRes.data.items || []).map((p: any) => ({
+        (res.data.items || []).map((p: any) => ({
           value: p.id, label: `${p.name} (${p.sku_code})`, sku: p.sku_code,
         }))
       );
+    } catch { message.warning('Không tải được danh sách sản phẩm'); }
+
+    // Đơn bán hàng (không bắt buộc — bỏ qua nếu lỗi)
+    try {
+      const res = await api.get('/api/sales', { params: { limit: 100 } });
       setOrders(
-        (saleRes.data.orders || []).map((o: any) => ({
-          value: o.id, label: `${o.invoice_number} — ${o.customer_name}`,
-        }))
+        (res.data.orders || [])
+          .filter((o: any) => o.status === 'confirmed' || o.status === 'delivered')
+          .map((o: any) => ({
+            value: o.id, label: `${o.invoice_number} — ${o.customer_name}`,
+          }))
       );
-    } catch {
-      message.warning('Không tải được dữ liệu dropdown');
-    }
+    } catch { /* đơn hàng là tùy chọn, bỏ qua lỗi */ }
   };
 
   const openModal = () => {
