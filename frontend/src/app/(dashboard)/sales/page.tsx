@@ -6,10 +6,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert, App, Button, Card, Col, Divider, Drawer, Form, Input,
-  InputNumber, Row, Select, Space, Statistic, Table, Tag, Typography,
+  InputNumber, Popconfirm, Row, Select, Space, Statistic, Table, Tag, Typography,
 } from 'antd';
 import {
-  DollarOutlined, PlusOutlined, ReloadOutlined, ShoppingCartOutlined,
+  DeleteOutlined, PlusOutlined, ReloadOutlined, ShoppingCartOutlined,
 } from '@ant-design/icons';
 import api from '@/lib/api';
 import { InventoryItem, InventoryListResponse } from '@/types';
@@ -185,6 +185,16 @@ export default function SalesPage() {
     }
   };
 
+  const handleDelete = async (orderId: string) => {
+    try {
+      await api.delete(`/api/sales/${orderId}`);
+      message.success('Đã xóa đơn hàng');
+      fetchData();
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Lỗi xóa đơn hàng');
+    }
+  };
+
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
       await api.put(`/api/sales/${orderId}/status`, { status: newStatus });
@@ -320,11 +330,33 @@ export default function SalesPage() {
               ),
             },
             {
-              title: 'Hành động', width: 80, align: 'center' as const,
+              title: 'Hành động', width: 120, align: 'center' as const,
               render: (_: unknown, record: SalesOrder) => (
-                <Button size="small" disabled={record.status !== 'draft'} onClick={() => openEdit(record)}>
-                  Sửa
-                </Button>
+                <Space>
+                  <Button
+                    size="small"
+                    disabled={record.status !== 'draft'}
+                    onClick={() => openEdit(record)}
+                  >
+                    Sửa
+                  </Button>
+                  <Popconfirm
+                    title="Xóa đơn hàng?"
+                    description="Chỉ xóa được đơn ở trạng thái Nháp. Thao tác không thể hoàn tác."
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                    disabled={record.status !== 'draft'}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      disabled={record.status !== 'draft'}
+                    />
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}
