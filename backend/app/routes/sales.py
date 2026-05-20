@@ -106,8 +106,8 @@ async def create_sales_order(
 
     items_data = await _build_sales_items(db, data.items)
     subtotal = sum(i["unit_price"] * i["quantity"] for i in items_data)
-    # item_discounts = sum of (discount_per_unit × quantity) for each line
-    item_discounts = sum(i["discount"] * i["quantity"] for i in items_data)
+    # item_discounts = sum of total line discounts (discount field = total discount for that line, not per-unit)
+    item_discounts = sum(i["discount"] for i in items_data)
     total_amount = subtotal - item_discounts - data.discount_total
 
     # Auto-upsert customer into customers collection (phone as unique key)
@@ -179,7 +179,8 @@ async def update_sales_order(
 
     items_data = await _build_sales_items(db, data.items)
     subtotal = sum(i["unit_price"] * i["quantity"] for i in items_data)
-    item_discounts = sum(i["discount"] * i["quantity"] for i in items_data)
+    # discount field = total line discount (not per-unit), no need to multiply by quantity
+    item_discounts = sum(i["discount"] for i in items_data)
     total_amount = subtotal - item_discounts - data.discount_total
     now = datetime.now(timezone.utc)
 
