@@ -141,7 +141,7 @@
 │  │          │ │  (17+)   │ │  (GroqCloud) │  │
 │  └──────────┘ └──────────┘ └─────────────┘  │
 └──────────────────┬──────────────────────────┘
-                   │ Motor (async)
+                   │ PyMongo Async Driver 
 ┌──────────────────▼──────────────────────────┐
 │              MongoDB Atlas                   │
 │  Collections: inventory, sales, purchases,  │

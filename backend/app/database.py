@@ -1,16 +1,17 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 from app.config import get_settings
 import certifi
 
 
 class Database:
-    """MongoDB connection manager using Motor async driver."""
+    """MongoDB connection manager using PyMongo Async driver."""
 
-    client: AsyncIOMotorClient = None
-    db: AsyncIOMotorDatabase = None
+    client: AsyncMongoClient = None
+    db: AsyncDatabase = None
 
 
 db_instance = Database()
@@ -19,7 +20,7 @@ db_instance = Database()
 async def connect_db():
     """Initialize MongoDB connection."""
     settings = get_settings()
-    db_instance.client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    db_instance.client = AsyncMongoClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     db_instance.db = db_instance.client[settings.DB_NAME]
 
     # Create indexes
@@ -73,7 +74,7 @@ async def close_db():
         print("🔌 MongoDB connection closed")
 
 
-def get_db() -> AsyncIOMotorDatabase:
+def get_db() -> AsyncDatabase:
     """Get database instance for dependency injection."""
     return db_instance.db
 

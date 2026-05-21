@@ -8,7 +8,7 @@ Run: python -m app.seed
 
 import asyncio
 from datetime import datetime, timezone, timedelta
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from passlib.context import CryptContext
 from app.config import get_settings
 from app.models.inventory import compute_stock_status
