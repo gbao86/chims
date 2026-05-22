@@ -326,22 +326,22 @@ chims/
 ## 📸 Screenshot
 
 ### Dashboard tổng quan
-<!-- ![Dashboard](docs/images/dashboard.png) -->
+![Dashboard](./images/dashboard.gif)
 
 ### Quản lý kho hàng
-<!-- ![Inventory](docs/images/inventory.png) -->
+![Inventory](./images/inventory.gif)
 
 ### Xây dựng cấu hình PC + AI phân tích
-<!-- ![PC Builder](docs/images/build-pc.png) -->
+![PC Builder](./images/build-pc.gif)
 
 ### Catalog sản phẩm
-<!-- ![Catalog](docs/images/catalog.png) -->
+![Catalog](./images/catalog.gif)
 
 ### Đơn bán hàng
-<!-- ![Sales](docs/images/sales.png) -->
+![Sales](./images/sales.png)
 
 ### Báo cáo & Thống kê
-<!-- ![Reports](docs/images/reports.png) -->
+![Reports](./images/reports.gif)
 
 ---
 
