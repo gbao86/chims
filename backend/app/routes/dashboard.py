@@ -61,21 +61,24 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             {"$match": {"created_at": {"$gte": first_of_month}}},
             {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}},
         ]
-        sales_result = await db.sales_orders.aggregate(sales_pipeline).to_list(1)
+        _cur = await db.sales_orders.aggregate(sales_pipeline)
+        sales_result = await _cur.to_list(length=None)
         sales_this_month = _to_float(sales_result[0]["total"]) if sales_result else 0.0
 
         purchasing_pipeline = [
             {"$match": {"created_at": {"$gte": first_of_month}, "status": "received"}},
             {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}},
         ]
-        purchasing_result = await db.purchase_orders.aggregate(purchasing_pipeline).to_list(1)
+        _cur = await db.purchase_orders.aggregate(purchasing_pipeline)
+        purchasing_result = await _cur.to_list(length=None)
         purchases_this_month = _to_float(purchasing_result[0]["total"]) if purchasing_result else 0.0
 
         revenue_pipeline = [
             {"$match": {"status": "completed"}},
             {"$group": {"_id": None, "total": {"$sum": "$total_cost"}}},
         ]
-        revenue_result = await db.tickets.aggregate(revenue_pipeline).to_list(1)
+        _cur = await db.tickets.aggregate(revenue_pipeline)
+        revenue_result = await _cur.to_list(length=None)
         total_revenue = _to_float(revenue_result[0]["total"]) if revenue_result else 0.0
 
         # ── Tickets Over Time (30 days) ──
@@ -85,15 +88,15 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             {"$sort": {"_id": 1}},
         ]
         tickets_over_time = []
-        async for doc in db.tickets.aggregate(trend_pipeline):
+        async for doc in (await db.tickets.aggregate(trend_pipeline)):
             tickets_over_time.append({"date": doc["_id"], "count": doc["count"]})
 
         # ── Category Distribution (count) ──
         category_distribution = []
-        async for doc in db.inventory.aggregate([
+        async for doc in (await db.inventory.aggregate([
             {"$group": {"_id": "$category", "count": {"$sum": 1}, "total_stock": {"$sum": "$stock_quantity"}, "total_value": {"$sum": {"$multiply": ["$stock_quantity", "$unit_price"]}}}},
             {"$sort": {"count": -1}},
-        ]):
+        ])):
             category_distribution.append({
                 "category": doc["_id"],
                 "count": doc["count"],
@@ -103,12 +106,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
         # ── Top SKUs by Stock Value ──
         top_by_value = []
-        async for doc in db.inventory.aggregate([
+        async for doc in (await db.inventory.aggregate([
             {"$addFields": {"stock_value": {"$multiply": ["$stock_quantity", "$unit_price"]}}},
             {"$sort": {"stock_value": -1}},
             {"$limit": 8},
             {"$project": {"name": 1, "sku_code": 1, "category": 1, "stock_quantity": 1, "unit_price": 1, "stock_value": 1}},
-        ]):
+        ])):
             top_by_value.append({
                 "name": doc.get("name", ""),
                 "sku_code": doc.get("sku_code", ""),
@@ -120,12 +123,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
         # ── Top Selling SKUs ──
         top_selling = []
-        async for doc in db.sales_orders.aggregate([
+        async for doc in (await db.sales_orders.aggregate([
             {"$unwind": "$items"},
             {"$group": {"_id": "$items.inventory_id", "total_qty": {"$sum": "$items.quantity"}, "total_revenue": {"$sum": {"$multiply": ["$items.quantity", "$items.unit_price"]}}, "name": {"$first": "$items.name"}}},
             {"$sort": {"total_qty": -1}},
             {"$limit": 8},
-        ]):
+        ])):
             top_selling.append({
                 "sku_id": str(doc["_id"]),
                 "name": doc.get("name") or "—",
@@ -136,55 +139,55 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         # ── Monthly Revenue (last 6 months) ──
         six_months_ago = now - timedelta(days=180)
         monthly_revenue = []
-        async for doc in db.sales_orders.aggregate([
+        async for doc in (await db.sales_orders.aggregate([
             {"$match": {"created_at": {"$gte": six_months_ago}}},
             {"$group": {"_id": {"$dateToString": {"format": "%Y-%m", "date": "$created_at"}}, "revenue": {"$sum": "$total_amount"}, "orders": {"$sum": 1}}},
             {"$sort": {"_id": 1}},
-        ]):
+        ])):
             monthly_revenue.append({"month": doc["_id"], "revenue": _to_float(doc.get("revenue", 0)), "orders": doc.get("orders", 0)})
 
         # ── Ticket Status Distribution ──
         ticket_status_dist = []
-        async for doc in db.tickets.aggregate([
+        async for doc in (await db.tickets.aggregate([
             {"$group": {"_id": "$status", "count": {"$sum": 1}}},
-        ]):
+        ])):
             ticket_status_dist.append({"status": doc["_id"], "count": doc["count"]})
 
         # ── Warranty Status ──
         warranty_status_dist = []
-        async for doc in db.warranties.aggregate([
+        async for doc in (await db.warranties.aggregate([
             {"$group": {"_id": "$status", "count": {"$sum": 1}}},
-        ]):
+        ])):
             warranty_status_dist.append({"status": doc["_id"], "count": doc["count"]})
 
         # ── Serial Unit Status ──
         serial_status_dist = []
-        async for doc in db.serial_units.aggregate([
+        async for doc in (await db.serial_units.aggregate([
             {"$group": {"_id": "$status", "count": {"$sum": 1}}},
-        ]):
+        ])):
             serial_status_dist.append({"status": doc["_id"], "count": doc["count"]})
 
         # ── RMA Status ──
         rma_status_dist = []
-        async for doc in db.rma_tickets.aggregate([
+        async for doc in (await db.rma_tickets.aggregate([
             {"$group": {"_id": "$status", "count": {"$sum": 1}}},
-        ]):
+        ])):
             rma_status_dist.append({"status": doc["_id"], "count": doc["count"]})
 
         # ── Purchase Orders by Status ──
         po_status_dist = []
-        async for doc in db.purchase_orders.aggregate([
+        async for doc in (await db.purchase_orders.aggregate([
             {"$group": {"_id": "$status", "count": {"$sum": 1}, "total": {"$sum": "$total_amount"}}},
-        ]):
+        ])):
             po_status_dist.append({"status": doc["_id"], "count": doc["count"], "total": _to_float(doc.get("total", 0))})
 
         # ── Top Customers by Spent ──
         top_customers = []
-        async for doc in db.customers.aggregate([
+        async for doc in (await db.customers.aggregate([
             {"$sort": {"total_spent": -1}},
             {"$limit": 5},
             {"$project": {"name": 1, "total_spent": 1, "order_count": 1, "type": 1}},
-        ]):
+        ])):
             top_customers.append({
                 "name": doc.get("name", ""),
                 "total_spent": _to_float(doc.get("total_spent", 0)),
