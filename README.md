@@ -158,7 +158,7 @@
 |---|---|
 | **Frontend** | Next.js 15 (App Router), TypeScript, Ant Design 5, Recharts |
 | **Backend** | FastAPI 0.115, Python 3.12+, Pydantic v2 |
-| **Database** | MongoDB Atlas (Motor async driver) |
+| **Database** | MongoDB Atlas (PyMongo Async Driver) |
 | **Auth** | JWT (python-jose), bcrypt |
 | **AI** | GroqCloud API — Llama 3.3 70B Versatile |
 | **Export** | ReportLab (PDF), openpyxl (Excel) |
