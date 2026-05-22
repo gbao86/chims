@@ -129,7 +129,7 @@ async def get_overstock_alerts(current_user: dict = Depends(get_current_user)):
         {"$sort": {"count": -1}},
         {"$limit": 20}
     ]
-    cursor = db.serial_units.aggregate(pipeline)
+    cursor = await db.serial_units.aggregate(pipeline)
     alerts = []
     async for doc in cursor:
         inv_id = doc["_id"]
@@ -164,7 +164,7 @@ async def get_liquidation_candidates(current_user: dict = Depends(get_current_us
         {"$sort": {"count": -1}},
         {"$limit": 10}
     ]
-    cursor = db.serial_units.aggregate(pipeline)
+    cursor = await db.serial_units.aggregate(pipeline)
     candidates = []
     async for doc in cursor:
         inv_id = doc["_id"]

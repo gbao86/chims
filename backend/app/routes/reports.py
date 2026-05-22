@@ -65,19 +65,21 @@ async def _build_summary(db):
     total_purchase_orders = await db.purchase_orders.count_documents({})
     total_warranties = await db.warranties.count_documents({})
 
-    sales_result = await db.sales_orders.aggregate([
+    _cur = await db.sales_orders.aggregate([
         {"$match": {"created_at": {"$gte": start_month}}},
         {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}},
-    ]).to_list(1)
+    ])
+    sales_result = await _cur.to_list(1)
     sales_this_month = sales_result[0]["total"] if sales_result else 0
 
-    po_result = await db.purchase_orders.aggregate([
+    _cur = await db.purchase_orders.aggregate([
         {"$match": {"created_at": {"$gte": start_month}, "status": "received"}},
         {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}},
-    ]).to_list(1)
+    ])
+    po_result = await _cur.to_list(1)
     purchases_this_month = po_result[0]["total"] if po_result else 0
 
-    activity_cursor = db.tickets.aggregate([
+    activity_cursor = await db.tickets.aggregate([
         {"$match": {"updated_at": {"$gte": start_week}}},
         {"$group": {"_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$updated_at"}}, "count": {"$sum": 1}}},
         {"$sort": {"_id": 1}},

@@ -62,7 +62,7 @@ def build_specs(category: str, name: str, base_specs: dict) -> dict:
 
 async def seed():
     settings = get_settings()
-    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    client = AsyncMongoClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     db = client[settings.DB_NAME]
 
     await db.users.delete_many({})
@@ -169,7 +169,7 @@ async def seed():
     print("  Sales:      salesperson / sales123")
     print("──────────────────────────────────")
 
-    client.close()
+    await client.close()
 
 
 if __name__ == "__main__":

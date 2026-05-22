@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -122,7 +122,7 @@ async def warehouse_stock(warehouse_id: str, current_user: dict = Depends(get_cu
         {"$match": {"warehouse_id": warehouse_id}},
         {"$group": {"_id": {"inventory_id": "$inventory_id", "status": "$status", "condition": "$condition"}, "count": {"$sum": 1}}},
     ]
-    cursor = db.serial_units.aggregate(pipeline)
+    cursor = await db.serial_units.aggregate(pipeline)
     stock = []
     async for doc in cursor:
         inv_id = doc["_id"]["inventory_id"]
@@ -172,7 +172,7 @@ async def stock_by_branch(current_user: dict = Depends(get_current_user)):
         {"$match": {"status": "available"}},
         {"$group": {"_id": "$warehouse_id", "count": {"$sum": 1}}},
     ]
-    cursor = db.serial_units.aggregate(pipeline)
+    cursor = await db.serial_units.aggregate(pipeline)
     branches = []
     async for doc in cursor:
         wh_name = "Chưa phân kho"

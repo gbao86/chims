@@ -70,7 +70,7 @@ async def connect_db():
 async def close_db():
     """Close MongoDB connection."""
     if db_instance.client:
-        db_instance.client.close()
+        await db_instance.client.close()
         print("🔌 MongoDB connection closed")
 
 

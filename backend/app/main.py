@@ -199,7 +199,7 @@ async def root():
         <span>→</span>
       </a>
     </div>
-    <p class="version">FastAPI · Motor · MongoDB Atlas · Python 3.11</p>
+    <p class="version">FastAPI · PyMongo Async · MongoDB Atlas · Python 3.11</p>
   </div>
 </body>
 </html>"""
