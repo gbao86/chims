@@ -23,6 +23,18 @@
 
 ---
 
+## 🔑 Tài khoản Demo (Chỉ xem)
+
+Để phục vụ quá trình đánh giá, chấm điểm và xem trực quan của nhà trường hoặc nhà tuyển dụng, hệ thống hỗ trợ tài khoản Demo đặc biệt với quyền xem đầy đủ chức năng nhưng không thể phá hoại dữ liệu:
+
+* **Tên đăng nhập**: `demo`
+* **Mật khẩu**: `demo123`
+* **Vai trò**: Quản trị viên (Admin) — Chỉ có quyền xem (Read-only)
+
+> 💡 **Cơ chế hoạt động:** Giao diện hiển thị đầy đủ tất cả chức năng quản lý nâng cao của Admin (Dashboard, Nhân viên, Kho hàng, Hoá đơn, PC Builder, v.v.). Tuy nhiên, mọi thao tác sửa đổi dữ liệu (Thêm mới, Xóa, Cập nhật) gửi tới Backend đều bị chặn lại và trả về thông báo lỗi: *"Tài khoản demo chỉ có quyền xem, không thể thực hiện thao tác này."* nhằm bảo vệ tính toàn vẹn dữ liệu mẫu.
+
+---
+
 ## 📋 Mục lục
 
 - [Giới thiệu](#-giới-thiệu)

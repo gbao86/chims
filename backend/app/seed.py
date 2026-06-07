@@ -81,11 +81,12 @@ async def seed():
         {"username": "admin", "password_hash": pwd_context.hash("admin123"), "full_name": "Nguyễn Văn Admin", "role": "admin", "created_at": now, "updated_at": now},
         {"username": "techguy", "password_hash": pwd_context.hash("tech123"), "full_name": "Trần Minh Kỹ Thuật", "role": "technician", "created_at": now, "updated_at": now},
         {"username": "salesperson", "password_hash": pwd_context.hash("sales123"), "full_name": "Lê Thị Bán Hàng", "role": "sales", "created_at": now, "updated_at": now},
+        {"username": "demo", "password_hash": pwd_context.hash("demo123"), "full_name": "Tài khoản Demo (Chỉ xem)", "role": "admin", "created_at": now, "updated_at": now},
     ]
 
     result = await db.users.insert_many(users)
     tech_id = str(result.inserted_ids[1])
-    print(f"👤 Created {len(users)} users (admin/admin123, techguy/tech123, salesperson/sales123)")
+    print(f"👤 Created {len(users)} users (admin/admin123, techguy/tech123, salesperson/sales123, demo/demo123)")
 
     inventory_items = [
         {"sku_code": "CPU-001", "name": "AMD Ryzen 5 5600X", "category": "CPU", "brand": "AMD", "image_url": local_image_url("CPU-001"), "specs": build_specs("CPU", "AMD Ryzen 5 5600X", {"socket": "AM4", "cores": 6, "threads": 12, "base_clock": "3.7GHz", "boost_clock": "4.6GHz", "l2_cache": "3MB", "l3_cache": "32MB", "tdp": 65, "process": "TSMC 7nm", "package": "Boxed", "supports_overclock": "Yes"}), "stock_quantity": 15, "unit_price": 4500000},
@@ -167,6 +168,7 @@ async def seed():
     print("  Admin:      admin / admin123")
     print("  Technician: techguy / tech123")
     print("  Sales:      salesperson / sales123")
+    print("  Demo:       demo / demo123")
     print("──────────────────────────────────")
 
     await client.close()
