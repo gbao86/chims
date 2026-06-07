@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -170,7 +170,7 @@ export default function LoginPage() {
 
         <div style={{ textAlign: 'center', marginTop: 22 }}>
           <Text style={{ color: '#64748b', fontSize: 12 }}>
-            Demo: admin / admin123
+            Demo: demo / demo123
           </Text>
         </div>
       </div>
