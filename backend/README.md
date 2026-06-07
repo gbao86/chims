@@ -208,6 +208,12 @@ JWT_EXPIRE_MINUTES=1440
 # ── AI Service (GroqCloud — Free tier) ───────────────────
 # Lấy key tại: https://console.groq.com
 GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# ── Khởi tạo Database Seeds (Tuỳ chọn) ───────────────────
+# Mật khẩu mặc định cho các tài khoản khi chạy seed.py (nếu để trống sẽ nhận giá trị mẫu)
+SEED_ADMIN_PASSWORD=your_secure_admin_password
+SEED_TECH_PASSWORD=your_secure_tech_password
+SEED_SALES_PASSWORD=your_secure_sales_password
 ```
 
 > ⚠️ **Không commit file `.env` lên git** — đã có trong `.gitignore`.
