@@ -49,6 +49,10 @@ export default function SettingsPage() {
   }, []);
 
   const handleUpdateProfile = async () => {
+    if (user?.username === 'demo') {
+      message.error('Tài khoản demo không được phép sửa đổi thông tin!');
+      return;
+    }
     if (!newName.trim()) {
       message.warning('Tên không được để trống');
       return;
@@ -73,6 +77,10 @@ export default function SettingsPage() {
   };
 
   const handlePasswordChange = () => {
+    if (user?.username === 'demo') {
+      message.error('Tài khoản demo không được phép đổi mật khẩu!');
+      return;
+    }
     message.info('Tính năng đổi mật khẩu sẽ được cập nhật trong phiên bản tới.');
   };
 

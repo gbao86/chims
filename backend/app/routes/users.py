@@ -126,13 +126,18 @@ async def update_user(
         oid = ObjectId(user_id)
     except Exception:
         raise HTTPException(status_code=400, detail="ID không hợp lệ")
+    
+    user = await db.users.find_one({"_id": oid})
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    if user.get("username") == "demo":
+        raise HTTPException(status_code=403, detail="Không được phép chỉnh sửa tài khoản demo")
+
     update = {k: v for k, v in data.model_dump().items() if v is not None}
     if "role" in update and update["role"] not in ALLOWED_ROLES:
         raise HTTPException(status_code=400, detail=f"Role không hợp lệ.")
     update["updated_at"] = datetime.now(timezone.utc)
-    result = await db.users.update_one({"_id": oid}, {"$set": update})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    await db.users.update_one({"_id": oid}, {"$set": update})
     updated = await db.users.find_one({"_id": oid})
     return serialize_user(updated)
 
@@ -149,14 +154,19 @@ async def reset_password(
         oid = ObjectId(user_id)
     except Exception:
         raise HTTPException(status_code=400, detail="ID không hợp lệ")
+    
+    user = await db.users.find_one({"_id": oid})
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    if user.get("username") == "demo":
+        raise HTTPException(status_code=403, detail="Không được phép đổi mật khẩu tài khoản demo")
+
     if len(data.new_password) < 6:
         raise HTTPException(status_code=400, detail="Mật khẩu phải ít nhất 6 ký tự")
-    result = await db.users.update_one(
+    await db.users.update_one(
         {"_id": oid},
         {"$set": {"password_hash": pwd_context.hash(data.new_password), "updated_at": datetime.now(timezone.utc)}},
     )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
     return {"message": "Đặt lại mật khẩu thành công"}
 
 
@@ -174,9 +184,13 @@ async def toggle_active(
     # Prevent admin from deactivating themselves
     if str(current_admin["_id"]) == user_id:
         raise HTTPException(status_code=400, detail="Không thể tự vô hiệu hóa tài khoản của mình")
+    
     user = await db.users.find_one({"_id": oid})
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    if user.get("username") == "demo":
+        raise HTTPException(status_code=403, detail="Không được phép vô hiệu hóa tài khoản demo")
+
     new_status = not user.get("is_active", True)
     await db.users.update_one(
         {"_id": oid},
@@ -198,7 +212,12 @@ async def delete_user(
         raise HTTPException(status_code=400, detail="ID không hợp lệ")
     if str(current_admin["_id"]) == user_id:
         raise HTTPException(status_code=400, detail="Không thể xóa tài khoản của chính mình")
-    result = await db.users.delete_one({"_id": oid})
-    if result.deleted_count == 0:
+    
+    user = await db.users.find_one({"_id": oid})
+    if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    if user.get("username") == "demo":
+        raise HTTPException(status_code=403, detail="Không được phép xóa tài khoản demo")
+
+    await db.users.delete_one({"_id": oid})
     return {"message": "Đã xóa tài khoản"}
