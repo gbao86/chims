@@ -42,6 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
     });
     const { access_token, user: userData } = response.data;
+    
+    // Set the token cookie on the frontend domain
+    document.cookie = `chims_token=${access_token}; path=/; max-age=86400; SameSite=Lax; Secure`;
+    
     setToken(access_token);
     setUser(userData);
     localStorage.setItem('chims_user', JSON.stringify(userData));
@@ -55,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(null);
     setUser(null);
+    document.cookie = "chims_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem('chims_token');
     localStorage.removeItem('chims_user');
     window.location.href = '/login';

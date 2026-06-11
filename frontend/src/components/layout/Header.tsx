@@ -57,6 +57,7 @@ export default function Header() {
     } catch (err) {
       console.error('Failed to log out', err);
     }
+    document.cookie = "chims_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem('chims_token');
     localStorage.removeItem('chims_user');
     window.location.href = '/login';
