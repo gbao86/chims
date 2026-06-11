@@ -168,7 +168,7 @@
 
 | Thành phần | Công nghệ |
 |---|---|
-| **Frontend** | Next.js 15 (App Router), TypeScript, Ant Design 5, Recharts |
+| **Frontend** | Next.js 16 (App Router), TypeScript, Ant Design 5, Recharts |
 | **Backend** | FastAPI 0.115, Python 3.12+, Pydantic v2 |
 | **Database** | MongoDB Atlas (PyMongo Async Driver) |
 | **Auth** | JWT (python-jose), bcrypt |
@@ -265,7 +265,7 @@ GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 | Module | Prefix | Mô tả |
 |---|---|---|
-| Authentication | `/api/auth` | Đăng nhập, đăng ký, refresh token |
+| Authentication | `/api/auth` | Đăng nhập, cập nhật thông tin cá nhân, đăng xuất (HttpOnly Cookie) |
 | Inventory | `/api/inventory` | CRUD SKU, tìm kiếm, lọc |
 | Sales | `/api/sales` | Đơn bán hàng |
 | Purchase Orders | `/api/purchase-orders` | Đơn nhập hàng |
