@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -24,12 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Hydrate from localStorage
-    const savedToken = localStorage.getItem('chims_token');
+    // Hydrate user from localStorage
     const savedUser = localStorage.getItem('chims_user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
+    const savedToken = localStorage.getItem('chims_token'); // support legacy fallback
+    if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+    if (savedToken) {
+      setToken(savedToken);
     }
     setIsLoading(false);
   }, []);
@@ -42,11 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { access_token, user: userData } = response.data;
     setToken(access_token);
     setUser(userData);
-    localStorage.setItem('chims_token', access_token);
     localStorage.setItem('chims_user', JSON.stringify(userData));
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch (err) {
+      console.error('Failed to log out from backend', err);
+    }
     setToken(null);
     setUser(null);
     localStorage.removeItem('chims_token');
@@ -59,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isAuthenticated: !!token,
+        isAuthenticated: !!user,
         isLoading,
         login,
         logout,

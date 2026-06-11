@@ -6,7 +6,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.database import get_db
+from app.database import get_db, get_client
 from app.auth.dependencies import get_current_user
 from app.models.sales_order import SalesOrderCreate, SalesStatusUpdate, SalesStatus
 from app.models.inventory import compute_stock_status
@@ -219,120 +219,121 @@ async def update_sales_status(
     current_user: dict = Depends(get_current_user),
 ):
     db = get_db()
+    client = get_client()
     try:
         oid = ObjectId(order_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid ID")
 
-    order = await db.sales_orders.find_one({"_id": oid})
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+    async with await client.start_session() as session:
+        async with session.start_transaction():
+            order = await db.sales_orders.find_one({"_id": oid}, session=session)
+            if not order:
+                raise HTTPException(status_code=404, detail="Order not found")
 
-    old_status = order["status"]
-    new_status = data.status.value
+            old_status = order["status"]
+            new_status = data.status.value
 
-    if old_status == new_status:
-        return serialize_sales_order(order)
+            if old_status == new_status:
+                return serialize_sales_order(order)
 
-    # Enforce status state machine
-    if old_status == "cancelled":
-        raise HTTPException(status_code=400, detail="Không thể thay đổi trạng thái của đơn hàng đã hủy")
-    if old_status == "delivered" and new_status in ["draft", "confirmed"]:
-        raise HTTPException(status_code=400, detail="Đơn hàng đã giao không thể quay lại trạng thái nháp hoặc xác nhận")
-    if old_status == "confirmed" and new_status == "draft":
-        raise HTTPException(status_code=400, detail="Đơn hàng đã xác nhận không thể quay lại trạng thái nháp")
+            # Enforce status state machine
+            if old_status == "cancelled":
+                raise HTTPException(status_code=400, detail="Không thể thay đổi trạng thái của đơn hàng đã hủy")
+            if old_status == "delivered" and new_status in ["draft", "confirmed"]:
+                raise HTTPException(status_code=400, detail="Đơn hàng đã giao không thể quay lại trạng thái nháp hoặc xác nhận")
+            if old_status == "confirmed" and new_status == "draft":
+                raise HTTPException(status_code=400, detail="Đơn hàng đã xác nhận không thể quay lại trạng thái nháp")
 
-    # When confirming or delivering a draft order: deduct stock and update customer stats
-    if old_status == "draft" and new_status in ["confirmed", "delivered"]:
-        decremented_items = []
-        for item in order.get("items", []):
-            try:
-                inv_oid = ObjectId(item["inventory_id"])
-            except Exception:
-                continue
+            # When confirming or delivering a draft order: deduct stock and update customer stats
+            if old_status == "draft" and new_status in ["confirmed", "delivered"]:
+                for item in order.get("items", []):
+                    try:
+                        inv_oid = ObjectId(item["inventory_id"])
+                    except Exception:
+                        continue
 
-            # Atomic decrement of stock with check
-            res = await db.inventory.update_one(
-                {"_id": inv_oid, "stock_quantity": {"$gte": item["quantity"]}},
-                {"$inc": {"stock_quantity": -item["quantity"]}}
-            )
-            if res.modified_count == 0:
-                # Rollback already decremented items
-                for rb_item in decremented_items:
-                    await db.inventory.update_one(
-                        {"_id": rb_item["oid"]},
-                        {"$inc": {"stock_quantity": rb_item["qty"]}}
+                    # Atomic decrement of stock with check
+                    res = await db.inventory.update_one(
+                        {"_id": inv_oid, "stock_quantity": {"$gte": item["quantity"]}},
+                        {"$inc": {"stock_quantity": -item["quantity"]}},
+                        session=session
                     )
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Sản phẩm {item.get('name')} đã hết hàng hoặc không đủ tồn kho."
-                )
+                    if res.modified_count == 0:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Sản phẩm {item.get('name')} đã hết hàng hoặc không đủ tồn kho."
+                        )
 
-            decremented_items.append({"oid": inv_oid, "qty": item["quantity"]})
+                    # Recalculate and update inventory status
+                    updated_inv = await db.inventory.find_one({"_id": inv_oid}, session=session)
+                    if updated_inv:
+                        await db.inventory.update_one(
+                            {"_id": inv_oid},
+                            {"$set": {
+                                "status": compute_stock_status(updated_inv["stock_quantity"], updated_inv.get("min_stock", 5)).value,
+                                "updated_at": datetime.now(timezone.utc),
+                            }},
+                            session=session
+                        )
 
-            # Recalculate and update inventory status
-            updated_inv = await db.inventory.find_one({"_id": inv_oid})
-            if updated_inv:
-                await db.inventory.update_one(
-                    {"_id": inv_oid},
-                    {"$set": {
-                        "status": compute_stock_status(updated_inv["stock_quantity"], updated_inv.get("min_stock", 5)).value,
-                        "updated_at": datetime.now(timezone.utc),
-                    }}
-                )
+                # Update customer stats
+                if order.get("customer_id"):
+                    try:
+                        cust_oid = ObjectId(order["customer_id"])
+                        await db.customers.update_one(
+                            {"_id": cust_oid},
+                            {"$inc": {"total_spent": order["total_amount"], "order_count": 1}},
+                            session=session
+                        )
+                    except Exception:
+                        pass
 
-        # Update customer stats
-        if order.get("customer_id"):
-            try:
-                cust_oid = ObjectId(order["customer_id"])
-                await db.customers.update_one(
-                    {"_id": cust_oid},
-                    {"$inc": {"total_spent": order["total_amount"], "order_count": 1}}
-                )
-            except Exception:
-                pass
+            # When cancelling a confirmed/delivered order: restore stock and deduct customer stats
+            elif old_status in ["confirmed", "delivered"] and new_status == "cancelled":
+                for item in order.get("items", []):
+                    try:
+                        inv_oid = ObjectId(item["inventory_id"])
+                    except Exception:
+                        continue
+                    
+                    await db.inventory.update_one(
+                        {"_id": inv_oid},
+                        {"$inc": {"stock_quantity": item["quantity"]}},
+                        session=session
+                    )
 
-    # When cancelling a confirmed/delivered order: restore stock and deduct customer stats
-    elif old_status in ["confirmed", "delivered"] and new_status == "cancelled":
-        for item in order.get("items", []):
-            try:
-                inv_oid = ObjectId(item["inventory_id"])
-            except Exception:
-                continue
-            
-            await db.inventory.update_one(
-                {"_id": inv_oid},
-                {"$inc": {"stock_quantity": item["quantity"]}}
+                    # Recalculate and update inventory status
+                    updated_inv = await db.inventory.find_one({"_id": inv_oid}, session=session)
+                    if updated_inv:
+                        await db.inventory.update_one(
+                            {"_id": inv_oid},
+                            {"$set": {
+                                "status": compute_stock_status(updated_inv["stock_quantity"], updated_inv.get("min_stock", 5)).value,
+                                "updated_at": datetime.now(timezone.utc),
+                            }},
+                            session=session
+                        )
+
+                # Deduct customer stats
+                if order.get("customer_id"):
+                    try:
+                        cust_oid = ObjectId(order["customer_id"])
+                        await db.customers.update_one(
+                            {"_id": cust_oid},
+                            {"$inc": {"total_spent": -order["total_amount"], "order_count": -1}},
+                            session=session
+                        )
+                    except Exception:
+                        pass
+
+            await db.sales_orders.update_one(
+                {"_id": oid},
+                {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc)}},
+                session=session
             )
-
-            # Recalculate and update inventory status
-            updated_inv = await db.inventory.find_one({"_id": inv_oid})
-            if updated_inv:
-                await db.inventory.update_one(
-                    {"_id": inv_oid},
-                    {"$set": {
-                        "status": compute_stock_status(updated_inv["stock_quantity"], updated_inv.get("min_stock", 5)).value,
-                        "updated_at": datetime.now(timezone.utc),
-                    }}
-                )
-
-        # Deduct customer stats
-        if order.get("customer_id"):
-            try:
-                cust_oid = ObjectId(order["customer_id"])
-                await db.customers.update_one(
-                    {"_id": cust_oid},
-                    {"$inc": {"total_spent": -order["total_amount"], "order_count": -1}}
-                )
-            except Exception:
-                pass
-
-    await db.sales_orders.update_one(
-        {"_id": oid},
-        {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc)}}
-    )
-    updated = await db.sales_orders.find_one({"_id": oid})
-    return serialize_sales_order(updated)
+            updated = await db.sales_orders.find_one({"_id": oid}, session=session)
+            return serialize_sales_order(updated)
 
 
 @router.delete("/{order_id}")

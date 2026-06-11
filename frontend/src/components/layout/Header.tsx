@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+// Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 // This file is part of the chims project.
 // Licensed under the GNU General Public License v3.0; see LICENSE for details.
 'use client';
@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import { useTheme } from '@/components/ThemeProvider';
 import { User } from '@/types';
+import api from '@/lib/api';
 import type { MenuProps } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -50,7 +51,12 @@ export default function Header() {
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch (err) {
+      console.error('Failed to log out', err);
+    }
     localStorage.removeItem('chims_token');
     localStorage.removeItem('chims_user');
     window.location.href = '/login';

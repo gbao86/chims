@@ -22,7 +22,6 @@ export default function LoginPage() {
     try {
       const response = await api.post<LoginResponse>('/api/auth/login', values);
       const { access_token, user } = response.data;
-      localStorage.setItem('chims_token', access_token);
       localStorage.setItem('chims_user', JSON.stringify(user));
       message.success(`Chào mừng, ${user.full_name}!`);
       router.push('/dashboard');

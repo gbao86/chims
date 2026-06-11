@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CHIMS API",
     description="Computer Hardware Inventory & Maintenance Management System",
-    version="1.0.0",
+    version="1.2.0",
     lifespan=lifespan,
     redoc_url=None,  # disable default — we serve a custom one below
 )
@@ -184,7 +184,7 @@ async def root():
     <div class="logo">⚡</div>
     <h1>CHIMS API</h1>
     <p class="sub">Computer Hardware Inventory & Management System</p>
-    <div class="badge"><div class="dot"></div> API đang hoạt động — v1.0.0</div>
+    <div class="badge"><div class="dot"></div> API đang hoạt động — v1.2.0</div>
     <div class="links">
       <a class="link-btn" href="/docs">
         <div>📄 &nbsp;Swagger UI — Tài liệu API tương tác</div>

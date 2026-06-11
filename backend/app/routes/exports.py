@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
+# Copyright (C) 2026 gbao86 <tiktokthu10@gmail.com>
 # This file is part of the chims project.
 # Licensed under the GNU General Public License v3.0; see LICENSE for details.
 from fastapi import APIRouter, Depends
@@ -18,32 +18,29 @@ from reportlab.pdfbase.ttfonts import TTFont
 from app.database import get_db
 from app.auth.dependencies import get_current_user
 
-FONT_FAMILY = "Arial"
-FONT_BOLD = "Arial-Bold"
+FONT_FAMILY = "NotoSans"
+FONT_BOLD = "NotoSans-Bold"
+
+# Thư mục font được bundle cùng project — không phụ thuộc hệ điều hành
+_FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts")
 
 
 def _register_pdf_fonts():
     if FONT_FAMILY in pdfmetrics.getRegisteredFontNames():
         return
 
-    font_root = os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")
-    font_path = os.path.join(font_root, "arial.ttf")
-    bold_path = os.path.join(font_root, "arialbd.ttf")
-    fallback_path = os.path.join(font_root, "DejaVuSans.ttf")
+    regular_path = os.path.join(_FONTS_DIR, "NotoSans-Regular.ttf")
+    bold_path = os.path.join(_FONTS_DIR, "NotoSans-Bold.ttf")
 
-    if os.path.exists(font_path):
-        pdfmetrics.registerFont(TTFont(FONT_FAMILY, font_path))
-    if os.path.exists(bold_path):
-        pdfmetrics.registerFont(TTFont(FONT_BOLD, bold_path))
+    if not os.path.exists(regular_path):
+        raise FileNotFoundError(
+            f"Bundled font not found: {regular_path}\n"
+            "Please ensure NotoSans-Regular.ttf and NotoSans-Bold.ttf "
+            "exist in backend/app/assets/fonts/"
+        )
 
-    if FONT_FAMILY not in pdfmetrics.getRegisteredFontNames():
-        if os.path.exists(fallback_path):
-            pdfmetrics.registerFont(TTFont(FONT_FAMILY, fallback_path))
-            pdfmetrics.registerFont(TTFont(FONT_BOLD, fallback_path))
-        elif os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont(FONT_FAMILY, font_path))
-            if os.path.exists(bold_path):
-                pdfmetrics.registerFont(TTFont(FONT_BOLD, bold_path))
+    pdfmetrics.registerFont(TTFont(FONT_FAMILY, regular_path))
+    pdfmetrics.registerFont(TTFont(FONT_BOLD, bold_path if os.path.exists(bold_path) else regular_path))
 
 router = APIRouter()
 

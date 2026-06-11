@@ -7,24 +7,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // Automatically send cookies with every request
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
-// Request interceptor: attach JWT token
-api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('chims_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Debounce flag — prevents multiple concurrent 401s from all triggering redirect
 let isRedirectingToLogin = false;
@@ -38,6 +25,8 @@ api.interceptors.response.use(
         isRedirectingToLogin = true;
         localStorage.removeItem('chims_token');
         localStorage.removeItem('chims_user');
+        // Delete cookie client side just in case (will only work if not HttpOnly, but good hygiene)
+        document.cookie = "chims_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         // Small delay so all in-flight requests can settle before redirect
         setTimeout(() => {
           window.location.href = '/login';

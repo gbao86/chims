@@ -78,3 +78,8 @@ def get_db() -> AsyncDatabase:
     """Get database instance for dependency injection."""
     return db_instance.db
 
+
+def get_client() -> AsyncMongoClient:
+    """Get database client for sessions/transactions."""
+    return db_instance.client
+

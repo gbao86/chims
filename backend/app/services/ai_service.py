@@ -98,12 +98,12 @@ async def analyze_build_with_ai(
 
     raw_text = ""
     try:
-        from groq import Groq
+        from groq import AsyncGroq
 
-        client = Groq(api_key=_get_api_key())
+        client = AsyncGroq(api_key=_get_api_key())
         prompt = build_prompt(components, rule_notes, total_tdp, recommended_psu, total_price)
 
-        chat_completion = client.chat.completions.create(
+        chat_completion = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {

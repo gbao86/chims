@@ -11,13 +11,26 @@ from app.database import get_db
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)):
-    """Dependency: Extract and validate the current user from JWT token."""
+async def get_current_user(request: Request):
+    """Dependency: Extract and validate the current user from JWT token (Header or Cookie)."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    token = None
+    # 1. Check Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    
+    # 2. Check Cookie
+    if not token:
+        token = request.cookies.get("chims_token")
+
+    if not token:
+        raise credentials_exception
 
     payload = verify_token(token)
     if payload is None:
