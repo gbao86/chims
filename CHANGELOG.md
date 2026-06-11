@@ -6,21 +6,24 @@ Toàn bộ lịch sử các thay đổi lớn của dự án CHIMS sẽ được
 
 ### Added
 - **Backend (BE)**:
-  - Hỗ trợ phương thức xác thực qua HttpOnly Cookie (`chims_token`) bảo mật chống XSS trong [routes.py](file:///D:/Hoc%20Tap/TTTN/chims/backend/app/auth/routes.py).
-  - Thêm endpoint `/api/auth/logout` để xóa cookie xác thực từ trình duyệt client.
-  - Bổ sung hàm tiện ích `get_client()` trong [database.py](file:///D:/Hoc%20Tap/TTTN/chims/backend/app/database.py) nhằm hỗ trợ quản lý transaction session.
+  - Hỗ trợ xác thực linh hoạt qua cả hai phương thức: `Authorization` header và HttpOnly Cookie (`chims_token`) trong `get_current_user` dependency.
+  - Thêm endpoint `/api/auth/logout` để xóa cookie xác thực HttpOnly từ trình duyệt.
+  - Backend tự động ghi HttpOnly Cookie khi đăng nhập thành công, hỗ trợ cấu hình `Secure` / `SameSite` tự động theo giao thức kết nối (HTTP local / HTTPS production).
+  - Bổ sung hàm tiện ích `get_client()` trong `database.py` để hỗ trợ khởi tạo MongoDB Transaction Sessions.
 - **Frontend (FE)**:
-  - Tích hợp Next.js Server-side Middleware tại [middleware.ts](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/middleware.ts) để kiểm tra token từ cookie bảo mật và điều hướng trực tiếp trên server, loại bỏ hoàn toàn blank flash.
+  - Tích hợp Next.js Server-side Middleware (`middleware.ts`) kiểm tra cookie `chims_token` và điều hướng trực tiếp trên server, loại bỏ hoàn toàn hiện tượng blank flash khi tải trang Dashboard.
+  - Áp dụng chiến lược xác thực kép (Dual Auth) cho kiến trúc triển khai cross-domain (Vercel + Render): cookie trên frontend domain cho Middleware routing, `Authorization` header từ `localStorage` cho API calls.
 
 ### Fixed
 - **Backend (BE)**:
-  - Chuyển đổi Groq SDK từ đồng bộ sang bất đồng bộ bằng `AsyncGroq` trong [ai_service.py](file:///D:/Hoc%20Tap/TTTN/chims/backend/app/services/ai_service.py) để tránh nghẽn Event Loop của FastAPI.
-  - Sửa lỗi nạp font chữ phụ thuộc hệ điều hành (OS-dependent) trong [exports.py](file:///D:/Hoc%20Tap/TTTN/chims/backend/app/routes/exports.py) sang sử dụng font `NotoSans` đóng gói kèm dự án, khắc phục lỗi 500 khi chạy trên Render (Linux).
-  - Áp dụng MongoDB Multi-document Transactions trong [sales.py](file:///D:/Hoc%20Tap/TTTN/chims/backend/app/routes/sales.py) khi thực hiện cập nhật kho hàng và thay đổi trạng thái đơn hàng để đảm bảo tính toàn vẹn dữ liệu (ACID).
+  - Chuyển đổi Groq SDK từ đồng bộ (`Groq`) sang bất đồng bộ (`AsyncGroq`) trong `ai_service.py` — khắc phục lỗi nghẽn Event Loop của FastAPI khi gọi API phân tích AI.
+  - Sửa lỗi nạp font chữ phụ thuộc hệ điều hành (Windows-only) trong `exports.py` — chuyển sang sử dụng font `NotoSans` đóng gói kèm dự án, khắc phục lỗi 500 khi xuất PDF trên Render (Linux).
+  - Áp dụng MongoDB Multi-document Transactions trong `sales.py` cho nghiệp vụ cập nhật trạng thái đơn hàng (trừ/cộng tồn kho, cập nhật thống kê khách hàng) — đảm bảo tính toàn vẹn dữ liệu ACID.
+  - Vá lỗi tương thích `passlib` + `bcrypt 4.x` (`AttributeError: module 'bcrypt' has no attribute '__about__'`) bằng runtime monkey-patch trong `app/__init__.py`.
 - **Frontend (FE)**:
-  - Loại bỏ hoàn toàn việc lưu trữ token trong `localStorage` tại [auth.tsx](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/lib/auth.tsx), [page.tsx](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/app/login/page.tsx), và [api.ts](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/lib/api.ts).
-  - Cấu hình Axios `withCredentials: true` để tự động gửi cookie an toàn.
-  - Cải tiến [layout.tsx](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/app/%28dashboard%29/layout.tsx) và [Header.tsx](file:///D:/Hoc%20Tap/TTTN/chims/frontend/src/components/layout/Header.tsx) để gỡ bỏ logic kiểm tra auth client-side chậm và thêm lệnh gọi đăng xuất backend.
+  - Khắc phục lỗi vòng lặp đăng nhập (login redirect loop) trên môi trường triển khai cross-domain do trình duyệt chặn cookie bên thứ ba — khôi phục Axios request interceptor gắn `Authorization` header kèm theo cookie frontend domain.
+  - Gỡ bỏ logic kiểm tra auth client-side (`useEffect` + `localStorage`) trong `layout.tsx`, thay thế bằng Next.js Middleware trên server.
+  - Cải tiến `Header.tsx` gọi API `/api/auth/logout` khi đăng xuất để xóa cookie từ cả backend và frontend domain.
 
 ## [1.1.0] - 2026-06-07
 

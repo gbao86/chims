@@ -72,7 +72,7 @@ Backend của **CHIMS** là một REST API được xây dựng bằng **FastAPI
 backend/
 ├── app/
 │   ├── auth/
-│   │   ├── routes.py          # POST /api/auth/login, /register, /refresh
+│   │   ├── routes.py          # POST /api/auth/login, /profile, /logout
 │   │   └── utils.py           # JWT encode/decode, password hashing
 │   │
 │   ├── models/                # Pydantic schemas (request & response)
@@ -126,7 +126,7 @@ backend/
 
 | Module | Prefix | Mô tả |
 |---|---|---|
-| 🔐 **Authentication** | `/api/auth` | Đăng nhập, đăng ký, refresh token |
+| 🔐 **Authentication** | `/api/auth` | Đăng nhập, cập nhật thông tin cá nhân, đăng xuất (HttpOnly Cookie) |
 | 📦 **Inventory** | `/api/inventory` | CRUD SKU, tìm kiếm, lọc theo danh mục |
 | 🛒 **Sales** | `/api/sales` | Tạo & quản lý đơn bán hàng |
 | 🛍️ **Purchase Orders** | `/api/purchase-orders` | Đơn nhập hàng từ nhà cung cấp |
@@ -222,19 +222,25 @@ SEED_SALES_PASSWORD=your_secure_sales_password
 
 ## 🔐 Authentication
 
-API sử dụng **JWT Bearer Token** theo chuẩn OAuth2 Password Flow.
+API hỗ trợ xác thực linh hoạt qua **hai phương thức song song** — phù hợp cho cả triển khai same-domain và cross-domain (Vercel + Render):
 
 ```
 POST /api/auth/login
   Body: { "username": "...", "password": "..." }
-  → { "access_token": "...", "token_type": "bearer" }
+  → JSON: { "access_token": "...", "token_type": "bearer" }
+  → Cookie: chims_token (HttpOnly, Secure, SameSite)
 
-Header: Authorization: Bearer <access_token>
+POST /api/auth/logout
+  → Xóa cookie chims_token
 ```
+
+**Phương thức xác thực được chấp nhận (theo thứ tự ưu tiên):**
+1. `Authorization: Bearer <access_token>` header (cho cross-domain API calls)
+2. `chims_token` HttpOnly Cookie (cho same-domain hoặc server-side rendering)
 
 - Token được ký bằng `HS256` với secret key từ biến môi trường.
 - Thời hạn mặc định: **24 giờ** (có thể cấu hình qua `JWT_EXPIRE_MINUTES`).
-- Password hash bằng **bcrypt** thông qua `passlib`.
+- Password hash bằng **bcrypt** thông qua `passlib` (đã vá tương thích bcrypt 4.x).
 
 ---
 
@@ -255,7 +261,7 @@ POST /api/builds/{id}/analyze
 
 ## 🗄️ Database
 
-MongoDB Atlas với **Motor async driver** (PyMongo async).
+MongoDB Atlas với **PyMongo Async Driver**. Hỗ trợ **Multi-document Transactions** cho các nghiệp vụ nhạy cảm (cập nhật trạng thái đơn hàng, trừ/cộng tồn kho).
 
 ### Collections chính
 

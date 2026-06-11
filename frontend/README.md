@@ -145,15 +145,16 @@ frontend/
 │   │   │   ├── reports/            # Báo cáo & thống kê
 │   │   │   └── settings/           # Cài đặt hệ thống
 │   │   │
-│   │   ├── login/                  # Trang đăng nhập
+│   ││   ├── login/                  # Trang đăng nhập
 │   │   ├── layout.tsx              # Root layout + AntD Registry
 │   │   ├── globals.css             # Global styles
 │   │   └── page.tsx                # Redirect về /dashboard
 │   │
+│   ├── middleware.ts                # Next.js Middleware — kiểm tra cookie auth trên server
 │   ├── components/                 # Reusable UI components
 │   ├── lib/
-│   │   ├── api.ts                  # Axios instance + interceptors
-│   │   └── auth.ts                 # Auth helpers (token, user)
+│   │   ├── api.ts                  # Axios instance + interceptors (Dual Auth)
+│   │   └── auth.tsx                # AuthProvider context + cookie/localStorage
 │   └── types/                      # TypeScript type definitions
 │
 ├── public/                         # Static assets
