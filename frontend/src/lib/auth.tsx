@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setToken(access_token);
     setUser(userData);
+    localStorage.setItem('chims_token', access_token);
     localStorage.setItem('chims_user', JSON.stringify(userData));
   }, []);
 

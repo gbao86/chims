@@ -7,11 +7,26 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Automatically send cookies with every request
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Request interceptor: attach JWT token via Authorization header
+// Required for cross-domain deployments (Vercel → Render) where cookies are blocked
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('chims_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Debounce flag — prevents multiple concurrent 401s from all triggering redirect
 let isRedirectingToLogin = false;

@@ -26,6 +26,7 @@ export default function LoginPage() {
       // Set the token cookie on the frontend domain so Next.js Middleware can read it
       document.cookie = `chims_token=${access_token}; path=/; max-age=86400; SameSite=Lax; Secure`;
       
+      localStorage.setItem('chims_token', access_token);
       localStorage.setItem('chims_user', JSON.stringify(user));
       message.success(`Chào mừng, ${user.full_name}!`);
       router.push('/dashboard');
