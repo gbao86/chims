@@ -17,9 +17,9 @@
 
 | Dịch vụ | Nền tảng | URL |
 |---|---|---|
-| **Frontend** | Vercel | [![Live](https://img.shields.io/badge/Live-chims--ten.vercel.app-000000?logo=vercel&logoColor=white)](https://chims-ten.vercel.app/) |
-| **Backend API** | Render | [![API](https://img.shields.io/badge/API-Live-009688?logo=render&logoColor=white)](https://chims-backend.onrender.com) |
-| **API Docs** | Render (Swagger) | [![Swagger](https://img.shields.io/badge/Swagger-Docs-85EA2D?logo=swagger&logoColor=black)](https://chims-backend.onrender.com/docs) |
+| **Frontend** | Vercel | <a href="https://chims-ten.vercel.app/"><img src="https://img.shields.io/badge/Live-chims--ten.vercel.app-000000?logo=vercel&logoColor=white" alt="Live"></a> |
+| **Backend API** | Render | <a href="https://chims-backend.onrender.com"><img src="https://img.shields.io/badge/API-Live-009688?logo=render&logoColor=white" alt="API Live"></a> |
+| **API Docs** | Render (Swagger) | <a href="https://chims-backend.onrender.com/docs"><img src="https://img.shields.io/badge/Swagger-Docs-85EA2D?logo=swagger&logoColor=black" alt="Swagger Docs"></a> |
 
 ---
 
