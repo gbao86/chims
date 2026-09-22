@@ -283,7 +283,7 @@ GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | Dashboard | `/api/dashboard` | Dữ liệu tổng quan |
 | Catalog | `/api/catalog` | Đồng bộ catalog sản phẩm |
 
-Xem đầy đủ tại: `http://localhost:8000/docs`
+Xem đầy đủ tại: `https://chims-backend.onrender.com/docs`
 
 ---
 
